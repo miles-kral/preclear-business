@@ -369,6 +369,8 @@ def purchase_complete_page(
                 )
             )
 
+            checkout_session = checkout_session.to_dict()
+
         except stripe.StripeError:
             return RedirectResponse(
                 url="/pricing",
