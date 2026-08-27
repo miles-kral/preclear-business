@@ -27,6 +27,21 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="PreClear Business",
+    docs_url=(
+        None
+        if config.IS_PRODUCTION
+        else "/docs"
+    ),
+    redoc_url=(
+        None
+        if config.IS_PRODUCTION
+        else "/redoc"
+    ),
+    openapi_url=(
+        None
+        if config.IS_PRODUCTION
+        else "/openapi.json"
+    ),
 )
 
 app.add_middleware(
