@@ -1,0 +1,529 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Support & Contact | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Support & Sales Contact
+{% endblock %}
+
+{% block content %}
+
+
+<section class="business-contact-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Support & Sales Contact
+        </p>
+
+        <h1 class="page-title">
+            How can we help?
+        </h1>
+
+        <p class="page-description">
+            Get help with your PreClear Business account,
+            billing, technical questions, product capabilities,
+            or custom Enterprise requirements.
+        </p>
+
+    </div>
+
+</section>
+
+
+{% if support_success %}
+
+    <div class="business-contact-success">
+
+        <strong>
+            Your support request has been received.
+        </strong>
+
+        <p>
+            The PreClear team will follow up using
+            the email address associated with your account.
+        </p>
+
+    </div>
+
+{% endif %}
+
+
+{% if sales_success %}
+
+    <div class="business-contact-success">
+
+        <strong>
+            Your Enterprise request has been received.
+        </strong>
+
+        <p>
+            A PreClear representative will follow up
+            using the email address you provided.
+        </p>
+
+    </div>
+
+{% endif %}
+
+
+{% if support_error %}
+
+    <div class="business-contact-error">
+
+        <strong>
+            Please complete the required fields.
+        </strong>
+
+        <p>
+            A subject and message are required
+            before submitting a support request.
+        </p>
+
+    </div>
+
+{% endif %}
+
+
+<section class="business-contact-grid">
+
+    <div class="business-contact-main">
+
+        <article class="card business-contact-panel">
+
+            <div class="business-contact-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Customer support
+                    </p>
+
+                    <h2>
+                        Submit a Support Request
+                    </h2>
+
+                    <p>
+                        Tell us what you need help with and
+                        we'll route your request appropriately.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <form
+                class="business-contact-form"
+                method="post"
+                action="/contact/support"
+            >
+
+                <label class="business-form-field">
+
+                    <span>
+                        Request type
+                    </span>
+
+                    <select
+                        name="request_type"
+                        required
+                    >
+                        <option value="general">
+                            General Support
+                        </option>
+
+                        <option value="technical">
+                            Technical Issue
+                        </option>
+
+                        <option value="billing">
+                            Billing / Subscription
+                        </option>
+
+                        <option value="account">
+                            Account Access
+                        </option>
+
+                        <option value="feature_integration">
+                            Feature / Integration Question
+                        </option>
+                    </select>
+
+                </label>
+
+
+                <label class="business-form-field">
+
+                    <span>
+                        Subject
+                    </span>
+
+                    <input
+                        type="text"
+                        name="subject"
+                        maxlength="180"
+                        placeholder="Briefly describe what you need help with"
+                        required
+                    >
+
+                </label>
+
+
+                <label class="business-form-field">
+
+                    <span>
+                        Message
+                    </span>
+
+                    <textarea
+                        name="message"
+                        rows="6"
+                        placeholder="Describe the issue, question, or request."
+                        required
+                    ></textarea>
+
+                </label>
+
+
+                <div class="business-contact-form__identity">
+
+                    <span>
+                        Requesting as
+                    </span>
+
+                    <strong>
+                        {{ current_user.name }}
+                        ·
+                        {{ current_organization.name }}
+                    </strong>
+
+                </div>
+
+
+                <div class="business-contact-form__actions">
+
+                    <button
+                        class="button button--primary"
+                        type="submit"
+                    >
+                        Submit Support Request
+                    </button>
+
+                    <a
+                        class="button button--outline"
+                        href="/settings/subscription"
+                    >
+                        Back to Subscription
+                    </a>
+
+                </div>
+
+            </form>
+
+        </article>
+
+        <article class="card business-contact-panel">
+
+            <div class="business-contact-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Enterprise Sales
+                    </p>
+
+                    <h2>
+                        Custom Enterprise Requirements
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <form
+                class="business-contact-form"
+                method="post"
+                action="/contact"
+            >
+
+                <div class="business-contact-form__grid">
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Company name
+                        </span>
+
+                        <input
+                            type="text"
+                            name="company_name"
+                            value="{{
+                                current_organization.name
+                                if current_organization
+                                else ''
+                            }}"
+                            required
+                        >
+
+                    </label>
+
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Contact name
+                        </span>
+
+                        <input
+                            type="text"
+                            name="contact_name"
+                            value="{{
+                                current_user.name
+                                if current_user
+                                else ''
+                            }}"
+                            required
+                        >
+
+                    </label>
+
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Contact email
+                        </span>
+
+                        <input
+                            type="email"
+                            name="contact_email"
+                            value="{{
+                                current_user.email
+                                if current_user
+                                else ''
+                            }}"
+                            required
+                        >
+
+                    </label>
+
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Estimated users
+                        </span>
+
+                        <input
+                            type="number"
+                            name="estimated_users"
+                            min="1"
+                            placeholder="e.g. 75"
+                        >
+
+                    </label>
+
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Estimated monthly analyses
+                        </span>
+
+                        <input
+                            type="number"
+                            name="estimated_monthly_analyses"
+                            min="1"
+                            placeholder="e.g. 5000"
+                        >
+
+                    </label>
+
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Purchase order
+                        </span>
+
+                        <input
+                            type="text"
+                            name="purchase_order"
+                            placeholder="Optional"
+                        >
+
+                    </label>
+
+                </div>
+
+
+                <label class="business-form-field">
+
+                    <span>
+                        Requirements or notes
+                    </span>
+
+                    <textarea
+                        name="notes"
+                        rows="6"
+                        placeholder="Tell us about higher capacity, custom deployment requirements, integrations, procurement needs, or anything else we should know."
+                    ></textarea>
+
+                </label>
+
+
+                <div class="business-contact-form__actions">
+
+                    <button
+                        class="button button--primary"
+                        type="submit"
+                    >
+                        Submit Enterprise Request
+                    </button>
+
+                    <a
+                        class="button button--outline"
+                        href="/settings/subscription"
+                    >
+                        Back to Subscription
+                    </a>
+
+                </div>
+
+            </form>
+
+        </article>
+
+    </div>
+
+
+    <aside class="business-contact-side">
+
+        <article class="card business-contact-panel">
+
+            <div class="business-contact-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Self-service Enterprise
+                    </p>
+
+                    <h2>
+                        Enterprise
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-contact-enterprise">
+
+                <strong>
+                    $499/month
+                </strong>
+
+                <p>
+                    Direct purchase includes:
+                </p>
+
+                <ul>
+                    <li>
+                        2,500 analyses per month
+                    </li>
+
+                    <li>
+                        50 team members
+                    </li>
+
+                    <li>
+                        50 environments
+                    </li>
+
+                    <li>
+                        36 months evidence retention
+                    </li>
+
+                    <li>
+                        Advanced reporting
+                    </li>
+
+                    <li>
+                        Advanced governance
+                    </li>
+
+                    <li>
+                        Integrations
+                    </li>
+
+                    <li>
+                        Priority support
+                    </li>
+                </ul>
+
+            </div>
+
+        </article>
+
+
+        <article class="card business-contact-panel">
+
+            <div class="business-contact-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Contact Sales when
+                    </p>
+
+                    <h2>
+                        Your Needs Go Further
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-contact-reasons">
+
+                <div>
+                    Higher analysis volume
+                </div>
+
+                <div>
+                    Larger teams or environment counts
+                </div>
+
+                <div>
+                    Custom or dedicated deployments
+                </div>
+
+                <div>
+                    Specialized integrations
+                </div>
+
+                <div>
+                    Extended evidence retention
+                </div>
+
+                <div>
+                    Procurement or contract requirements
+                </div>
+
+            </div>
+
+        </article>
+
+    </aside>
+
+</section>
+
+
+{% endblock %}

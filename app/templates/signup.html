@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}
+Create Account | PreClear Business
+{% endblock %}
+
+{% block content %}
+
+<section class="auth-page">
+
+    <div class="auth-card">
+
+        <div class="auth-card__header">
+
+            <p class="eyebrow">
+                PreClear Business
+            </p>
+
+            <h1>
+                Create your organization
+            </h1>
+
+            <p>
+                Create your PreClear Business account
+                and organization workspace.
+            </p>
+
+        </div>
+
+        <div class="auth-plan-summary">
+
+            <div>
+
+                <span class="auth-plan-summary__label">
+                    Selected plan
+                </span>
+
+                <strong>
+                    {{ selected_plan_config["name"] }}
+                </strong>
+
+            </div>
+
+            <div>
+
+                <span class="auth-plan-summary__label">
+                    Billing
+                </span>
+
+                <strong>
+                    {{ billing_interval_label }}
+                    ·
+                    {{ billing_price_label }}
+                </strong>
+
+            </div>
+
+            <a
+                class="auth-plan-summary__change"
+                href="/pricing"
+            >
+                Change plan
+            </a>
+
+        </div>
+
+
+        {% if error %}
+            <div class="alert alert--danger">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        {% if existing_user %}
+
+            <div class="auth-existing-account">
+
+                <p class="eyebrow">
+                    Existing account
+                </p>
+
+                <h2>
+                    This purchase matches an existing PreClear account.
+                </h2>
+
+                <p>
+                    Sign in to attach this paid subscription
+                    to your account.
+                </p>
+
+                {% if claim_error %}
+                    <div class="alert alert--danger">
+                        Invalid password.
+                    </div>
+                {% endif %}
+
+                {% if existing_subscription %}
+                    <div class="alert alert--danger">
+                        This account already has an active subscription.
+                        Please contact PreClear support so we can
+                        safely apply this purchase.
+                    </div>
+                {% endif %}
+        
+
+                <form
+                    method="post"
+                    action="/purchase/claim-existing"
+                    class="auth-form"
+                >
+
+                <input
+                    type="hidden"
+                    name="purchase_token"
+                    value="{{ purchase_token }}"
+                >
+
+                <label>
+                    Email
+
+                    <input
+                        type="email"
+                        value="{{ purchase_email }}"
+                        readonly
+                    >
+                </label>
+
+                <label>
+                    Password
+
+                    <input
+                        type="password"
+                        name="password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </label>
+
+                <button
+                    class="button button--primary button--full"
+                    type="submit"
+                >
+                    Sign In & Attach Purchase
+                </button>
+
+            </form>
+
+            </div>
+
+    {% else %}
+
+
+        <form
+            class="auth-form"
+            method="post"
+            action="/signup"
+        >
+
+            <input
+                type="hidden"
+                name="purchase_token"
+                value="{{ purchase_token }}"
+            >
+
+            <label>
+                Your name
+
+                <input
+                    type="text"
+                    name="name"
+                    autocomplete="name"
+                    required
+                >
+            </label>
+
+
+            <label>
+                Business email
+
+                <input
+                    type="email"
+                    name="email"
+                    value="{{ purchase_email }}"
+                    autocomplete="email"
+                    readonly
+                    required
+                >
+            </label>
+
+
+            <label>
+                Organization name
+
+                <input
+                    type="text"
+                    name="organization_name"
+                    autocomplete="organization"
+                    required
+                >
+            </label>
+
+
+            <label>
+                Password
+
+                <input
+                    type="password"
+                    name="password"
+                    autocomplete="new-password"
+                    minlength="10"
+                    required
+                >
+            </label>
+
+
+            <label>
+                Confirm password
+
+                <input
+                    type="password"
+                    name="password_confirm"
+                    autocomplete="new-password"
+                    minlength="10"
+                    required
+                >
+            </label>
+
+
+            <button
+                class="button button--primary button--full"
+                type="submit"
+            >
+                Create Account & Continue
+            </button>
+
+        </form>
+
+
+        <p class="auth-card__footer">
+            Already have an account?
+            <a href="/login">
+                Log in
+            </a>
+        </p>
+
+    {% endif %}
+
+    </div>
+
+</section>
+
+{% endblock %}

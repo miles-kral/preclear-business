@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="public-contact">
+
+    <div class="public-contact__container">
+
+        <header class="public-contact__hero">
+
+            <span class="eyebrow">
+                Contact PreClear
+            </span>
+
+            <h1>
+                Let's talk about protecting your business.
+            </h1>
+
+            <p>
+                Whether you're evaluating PreClear Business,
+                planning a larger deployment, or exploring
+                Enterprise requirements, we're here to help.
+            </p>
+
+        </header>
+
+
+        {% if sales_success %}
+
+            <div class="business-contact-success">
+
+                <strong>
+                    Your request has been received.
+                </strong>
+
+                <p>
+                    A PreClear representative will follow up
+                    using the email address you provided.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+
+        <div class="public-contact__grid">
+
+            <div class="public-contact__main">
+
+                <article class="card business-contact-panel">
+
+                    <div class="business-contact-panel__header">
+
+                        <div>
+
+                            <p class="eyebrow">
+                                Sales & Enterprise
+                            </p>
+
+                            <h2>
+                                Tell us what you need.
+                            </h2>
+
+                            <p>
+                                Contact us about PreClear Business,
+                                larger deployments, integrations,
+                                procurement, or custom Enterprise
+                                requirements.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <form
+                        class="business-contact-form"
+                        method="post"
+                        action="/contact"
+                    >
+
+                        <div class="business-contact-form__grid">
+
+                            <label class="business-form-field">
+
+                                <span>
+                                    Company name
+                                </span>
+
+                                <input
+                                    type="text"
+                                    name="company_name"
+                                    required
+                                >
+
+                            </label>
+
+
+                            <label class="business-form-field">
+
+                                <span>
+                                    Contact name
+                                </span>
+
+                                <input
+                                    type="text"
+                                    name="contact_name"
+                                    autocomplete="name"
+                                    required
+                                >
+
+                            </label>
+
+
+                            <label class="business-form-field">
+
+                                <span>
+                                    Contact email
+                                </span>
+
+                                <input
+                                    type="email"
+                                    name="contact_email"
+                                    autocomplete="email"
+                                    required
+                                >
+
+                            </label>
+
+
+                            <label class="business-form-field">
+
+                                <span>
+                                    Estimated users
+                                </span>
+
+                                <input
+                                    type="number"
+                                    name="estimated_users"
+                                    min="1"
+                                    placeholder="e.g. 75"
+                                >
+
+                            </label>
+
+
+                            <label class="business-form-field">
+
+                                <span>
+                                    Estimated monthly analyses
+                                </span>
+
+                                <input
+                                    type="number"
+                                    name="estimated_monthly_analyses"
+                                    min="1"
+                                    placeholder="e.g. 5000"
+                                >
+
+                            </label>
+
+
+                            <label class="business-form-field">
+
+                                <span>
+                                    Purchase order
+                                </span>
+
+                                <input
+                                    type="text"
+                                    name="purchase_order"
+                                    placeholder="Optional"
+                                >
+
+                            </label>
+
+                        </div>
+
+
+                        <label class="business-form-field">
+
+                            <span>
+                                Requirements or notes
+                            </span>
+
+                            <textarea
+                                name="notes"
+                                rows="6"
+                                placeholder="Tell us about your security needs, deployment requirements, integrations, procurement process, or anything else we should know."
+                            ></textarea>
+
+                        </label>
+
+
+                        <div class="business-contact-form__actions">
+
+                            <button
+                                class="button button--primary"
+                                type="submit"
+                            >
+                                Contact PreClear
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </article>
+
+            </div>
+
+
+            <aside class="public-contact__side">
+
+                <article class="card business-contact-panel">
+
+                    <p class="eyebrow">
+                        Existing customer
+                    </p>
+
+                    <h2>
+                        Need support?
+                    </h2>
+
+                    <p>
+                        Sign in to access account-specific
+                        technical, billing, subscription,
+                        and product support.
+                    </p>
+
+                    <a
+                        class="button button--primary button--full"
+                        href="/login"
+                    >
+                        Sign In for Support
+                    </a>
+
+                </article>
+
+
+                <article class="card business-contact-panel">
+
+                    <p class="eyebrow">
+                        Self-service plans
+                    </p>
+
+                    <h2>
+                        Ready to get started?
+                    </h2>
+
+                    <p>
+                        Compare Small Business and Enterprise
+                        plans and start your subscription online.
+                    </p>
+
+                    <a
+                        class="button button--primary button--full"
+                        href="/pricing"
+                    >
+                        View Pricing
+                    </a>
+
+                </article>
+
+            </aside>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}

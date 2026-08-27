@@ -1,0 +1,645 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Subscription | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Subscription
+{% endblock %}
+
+{% block content %}
+
+
+<section class="business-settings-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Settings
+        </p>
+
+        <h1 class="page-title">
+            Subscription Management
+        </h1>
+
+        <p class="page-description">
+            Review your current PreClear Business plan,
+            subscription status, and included capabilities.
+        </p>
+
+    </div>
+
+    <a
+        class="button button--outline"
+        href="/settings"
+    >
+        Back to Settings
+    </a>
+
+</section>
+
+
+<section class="business-subscription-grid">
+
+
+    <div class="business-subscription-main">
+
+
+        <article class="card business-settings-panel">
+
+            <div class="business-settings-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Current subscription
+                    </p>
+
+                    <h2>
+                        {{ plan_config["name"] }}
+                    </h2>
+
+                </div>
+
+                <div class="business-subscription-status">
+
+                    <span
+                        class="
+                            status-badge
+                            {% if subscription_status == 'active' %}
+                                status-badge--success
+                            {% elif subscription_status == 'trialing' %}
+                                status-badge--neutral
+                            {% else %}
+                                status-badge--warning
+                            {% endif %}
+                            status-badge--small
+                        "
+                    >
+                        {{ subscription_status_label }}
+                    </span>
+
+                    {% if subscription_cancel_date_label %}
+                        <span class="business-subscription-cancellation">
+                            Cancels {{ subscription_cancel_date_label }}
+                        </span>
+                    {% endif %}
+
+                    {% if subscription_status == "past_due" %}
+                        <span class="business-subscription-payment-warning">
+                            Payment issue — update billing information
+                        </span>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            {% if plan_over_limit %}
+
+                <div class="business-subscription-limit-warning">
+
+                    <strong>
+                        Plan limits exceeded
+                    </strong>
+
+                    <p>
+                        Your organization currently exceeds the
+                        capacity of the {{ plan_config["name"] }}
+                        plan. Existing resources remain available,
+                        but you’ll need to reduce usage or upgrade
+                        before adding more.
+                    </p>
+
+                    <ul>
+                        {% if team_over_limit %}
+                            <li>
+                                Team members:
+                                {{ active_team_member_count }}
+                                active /
+                                {{ plan_config["team_member_limit"] }}
+                                allowed
+                            </li>
+                        {% endif %}
+
+                        {% if environment_over_limit %}
+                            <li>
+                                Environments:
+                                {{ active_environment_count }}
+                                active /
+                                {{ plan_config["environment_limit"] }}
+                                allowed
+                            </li>
+                        {% endif %}
+                    </ul>
+
+                </div>
+
+            {% endif %}
+
+
+            <div class="business-subscription-current">
+
+                <div>
+
+                    <span>
+                        Current billing
+                    </span>
+
+                    <strong>
+                        {% if billing_interval_label and billing_price_label %}
+                            {{ billing_interval_label }}
+                            ·
+                            {{ billing_price_label }}
+                        {% else %}
+                            Not available
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+                <div>
+
+                    <span>
+                        Monthly price
+                    </span>
+
+                    <strong>
+                        {% if plan_config["monthly_price"] %}
+                            ${{ plan_config["monthly_price"] }}/month
+                        {% else %}
+                            Custom
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Annual price
+                    </span>
+
+                    <strong>
+                        {% if plan_config["annual_price"] %}
+                            ${{ plan_config["annual_price"] }}/year
+                        {% else %}
+                            Contact Sales
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Analyses
+                    </span>
+
+                    <strong>
+                        {% if plan_config["analysis_limit"] %}
+                            {{ plan_config["analysis_limit"] }}/month
+                        {% else %}
+                            Custom
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Team members
+                    </span>
+
+                    <strong>
+                        {% if plan_config["team_member_limit"] %}
+                            {{ plan_config["team_member_limit"] }}
+                        {% else %}
+                            Custom
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Environments
+                    </span>
+
+                    <strong>
+                        {% if plan_config["environment_limit"] %}
+                            {{ plan_config["environment_limit"] }}
+                        {% else %}
+                            Custom
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Evidence retention
+                    </span>
+
+                    <strong>
+                        {% if plan_config["evidence_retention_months"] %}
+                            {{ plan_config["evidence_retention_months"] }}
+                            months
+                        {% else %}
+                            Custom
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-subscription-actions">
+
+                {% if current_organization.stripe_customer_id %}
+
+                    <form
+                        method="post"
+                        action="/billing/portal"
+                    >
+                        <button
+                            class="button button--primary"
+                            type="submit"
+                        >
+                            Manage Billing
+                        </button>
+                    </form>
+
+                    {% if subscription_status == "past_due" %}
+                        <span>
+                            Update your payment method to avoid
+                            service interruption.
+                        </span>
+                    {% else %}
+                        <span>
+                            Manage payment methods, invoices,
+                            billing details, and your subscription.
+                        </span>
+                    {% endif %}
+
+                {% endif %}
+
+            </div>
+
+        </article>
+
+
+        <article class="card business-settings-panel">
+
+            <div class="business-settings-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Plan comparison
+                    </p>
+
+                    <h2>
+                        Compare Plans
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-subscription-plans">
+
+                <div
+                    class="
+                        business-subscription-plan
+                        {% if current_organization.plan == 'small_business' %}
+                            business-subscription-plan--current
+                        {% endif %}
+                    "
+                >
+
+                    <div class="business-subscription-plan__header">
+
+                        <div>
+
+                            <strong>
+                                Small Business
+                            </strong>
+
+                            <span>
+                                ${{ small_business_plan["monthly_price"] }}/month
+                                  or ${{ small_business_plan["annual_price"] }}/year
+                            </span>
+
+                        </div>
+
+                        {% if current_organization.plan == "small_business" %}
+                            <span class="status-badge status-badge--success status-badge--small">
+                                Current
+                            </span>
+                        {% endif %}
+
+                    </div>
+
+
+                    <ul>
+
+                        <li>
+                            {{ small_business_plan["analysis_limit"] }}
+                            analyses per month
+                        </li>
+
+                        <li>
+                            {{ small_business_plan["team_member_limit"] }}
+                            team members
+                        </li>
+
+                        <li>
+                            {{ small_business_plan["environment_limit"] }}
+                            environments
+                        </li>
+
+                        <li>
+                            {{ small_business_plan["evidence_retention_months"] }}
+                            months evidence retention
+                        </li>
+
+                        <li>
+                            Standard reporting
+                        </li>
+
+                    </ul>
+
+                    <div class="business-subscription-plan__actions">
+
+                        {% if
+                            current_organization.plan == "small_business"
+                            and subscription_status == "active"
+                        %}
+
+                            <button
+                                class="button button--primary"
+                                type="button"
+                                disabled
+                            >
+                                Current Plan
+                            </button>
+
+                            <form
+                                method="post"
+                                action="/billing/portal"
+                            >
+                                <button
+                                    class="button button--primary"
+                                    type="submit"
+                                >
+                                    Manage Subscription
+                                </button>
+                            </form>
+
+                        {% else %}
+
+                            <form
+                                method="post"
+                                action="/billing/checkout"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="plan"
+                                    value="small_business"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="billing_interval"
+                                    value="monthly"
+                                >
+
+                                <button
+                                    class="button button--primary"
+                                    type="submit"
+                                >
+                                    Choose Monthly
+                                </button>
+                            </form>
+
+                            <form
+                                method="post"
+                                action="/billing/checkout"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="plan"
+                                    value="small_business"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="billing_interval"
+                                    value="annual"
+                                >
+
+                                <button
+                                    class="button button--primary"
+                                    type="submit"
+                                >
+                                    Choose Annual
+                                </button>
+                            </form>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="
+                        business-subscription-plan
+                        {% if current_organization.plan == 'enterprise' %}
+                            business-subscription-plan--current
+                        {% endif %}
+                    "
+                >
+
+                    <div class="business-subscription-plan__header">
+
+                        <div>
+
+                            <strong>
+                                Enterprise
+                            </strong>
+
+                            <span>
+                                ${{ enterprise_plan["monthly_price"] }}/month
+                                    or ${{ enterprise_plan["annual_price"] }}/year
+                            </span>
+
+                        </div>
+
+                        {% if current_organization.plan == "enterprise" %}
+                            <span class="status-badge status-badge--success status-badge--small">
+                                Current
+                            </span>
+                        {% endif %}
+
+                    </div>
+
+
+                    <ul>
+
+                        <li>
+                            {{ enterprise_plan["analysis_limit"] }}
+                            analyses per month
+                        </li>
+
+                        <li>
+                            {{ enterprise_plan["team_member_limit"] }}
+                            team members
+                        </li>
+
+                        <li>
+                            {{ enterprise_plan["environment_limit"] }}
+                            environments
+                        </li>
+
+                        <li>
+                            {{ enterprise_plan["evidence_retention_months"] }}
+                            months evidence retention
+                        </li>
+
+                        {% if enterprise_plan["advanced_reporting"] %}
+                            <li>
+                                Advanced reporting
+                            </li>
+                        {% endif %}
+
+                        {% if enterprise_plan["advanced_governance"] %}
+                            <li>
+                                Advanced governance
+                            </li>
+                        {% endif %}
+
+                        {% if enterprise_plan["integrations"] %}
+                            <li>
+                                Integrations
+                            </li>
+                        {% endif %}
+
+                        {% if enterprise_plan["priority_support"] %}
+                            <li>
+                                Priority support
+                            </li>
+                        {% endif %}
+
+                    </ul>
+
+                    <div class="business-subscription-plan__custom">
+
+                        <strong>
+                            Need more capacity?
+                        </strong>
+
+                        <p>
+                            Contact Sales for higher usage limits,
+                            custom deployments, specialized integrations,
+                            and enterprise requirements.
+                        </p>
+
+                        <a
+                            class="button button--outline"
+                            href="/contact"
+                            class="business-subscription-plan__sales-link"
+                        >
+                            Contact Sales
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </article>
+
+    </div>
+
+
+    <aside class="business-subscription-side">
+
+        <article class="card business-settings-panel">
+
+            <div class="business-settings-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Billing identity
+                    </p>
+
+                    <h2>
+                        Stripe Status
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-settings-details">
+
+                <div>
+
+                    <span>
+                        Customer
+                    </span>
+
+                    <strong>
+                        {% if current_organization.stripe_customer_id %}
+                            Connected
+                        {% else %}
+                            Not connected
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Subscription
+                    </span>
+
+                    <strong>
+                        {% if current_organization.stripe_subscription_id %}
+                            Connected
+                        {% else %}
+                            Not connected
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </article>
+
+    </aside>
+
+</section>
+
+
+{% endblock %}

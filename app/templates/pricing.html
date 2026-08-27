@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block title %}
+Pricing | PreClear Business
+{% endblock %}
+
+{% block meta_description %}
+Choose the PreClear Business plan that fits your organization. Start with Small Business or Enterprise protection with monthly or annual billing.
+{% endblock %}
+
+{% block content %}
+
+<section class="business-pricing-page">
+
+    <div class="business-pricing-page__heading">
+
+        <span class="eyebrow">
+            PreClear Business pricing
+        </span>
+
+        <h1>
+            Protection that grows with your organization.
+        </h1>
+
+        <p>
+            Choose the level of protection, visibility,
+            and governance your organization needs.
+            Both standard plans are available with
+            monthly or annual billing.
+        </p>
+
+    </div>
+
+
+    <div class="business-pricing-page__grid">
+
+
+        <article class="price-card business-pricing-card">
+
+            <div class="business-pricing-card__header">
+
+                <span class="eyebrow">
+                    Growing teams
+                </span>
+
+                <h2>
+                    {{ small_business_plan["name"] }}
+                </h2>
+
+                <p>
+                    Protection, evidence, and visibility
+                    for organizations handling external
+                    files every day.
+                </p>
+
+            </div>
+
+
+            <div class="business-pricing-card__price">
+
+                <strong>
+                    ${{ small_business_plan["monthly_price"] }}
+                </strong>
+
+                <span>
+                    /month
+                </span>
+
+            </div>
+
+
+            <p class="business-pricing-card__annual">
+                Or ${{ small_business_plan["annual_price"] }}/year
+                — two months free.
+            </p>
+
+
+            <ul>
+                <li>
+                    {{ small_business_plan["analysis_limit"] }}
+                    analyses per month
+                </li>
+
+                <li>
+                    Up to
+                    {{ small_business_plan["team_member_limit"] }}
+                    team members
+                </li>
+
+                <li>
+                    Up to
+                    {{ small_business_plan["environment_limit"] }}
+                    environments
+                </li>
+
+                <li>
+                    {{ small_business_plan["evidence_retention_months"] }}
+                    months of evidence retention
+                </li>
+
+                <li>
+                    Business Trust Journal
+                </li>
+
+                <li>
+                    Standard reporting
+                </li>
+
+                <li>
+                    Audit history
+                </li>
+            </ul>
+
+
+            <div class="business-pricing-card__actions">
+
+                <form
+                    method="post"
+                    action="/purchase/checkout"
+                >
+                    <input
+                        type="hidden"
+                        name="plan"
+                        value="small_business"
+                    >
+
+                    <input
+                        type="hidden"
+                        name="billing_interval"
+                        value="monthly"
+                    >
+
+                    <button
+                        class="button button--primary button--full"
+                        type="submit"
+                    >
+                        Start Monthly
+                    </button>
+                </form>
+
+                <form
+                    method="post"
+                    action="/purchase/checkout"
+                >
+                    <input
+                        type="hidden"
+                        name="plan"
+                        value="small_business"
+                    >
+
+                    <input
+                        type="hidden"
+                        name="billing_interval"
+                        value="annual"
+                    >
+
+                    <button
+                        class="button button--secondary button--full"
+                        type="submit"
+                    >
+                        Start Annual
+                    </button>
+                </form>
+
+            </div>
+
+        </article>
+
+
+        <article
+            class="
+                price-card
+                featured
+                business-pricing-card
+            "
+        >
+
+            <span
+                class="
+                    status-badge
+                    status-badge--primary
+                    status-badge--small
+                    price-card__badge
+                "
+            >
+                Advanced
+            </span>
+
+
+            <div class="business-pricing-card__header">
+
+                <span class="eyebrow">
+                    Advanced organizations
+                </span>
+
+                <h2>
+                    {{ enterprise_plan["name"] }}
+                </h2>
+
+                <p>
+                    Higher capacity, advanced governance,
+                    reporting, integrations, and support
+                    for larger organizations.
+                </p>
+
+            </div>
+
+
+            <div class="business-pricing-card__price">
+
+                <strong>
+                    ${{ enterprise_plan["monthly_price"] }}
+                </strong>
+
+                <span>
+                    /month
+                </span>
+
+            </div>
+
+
+            <p class="business-pricing-card__annual">
+                Or ${{ enterprise_plan["annual_price"] }}/year
+                — two months free.
+            </p>
+
+
+            <ul>
+                <li>
+                    {{ enterprise_plan["analysis_limit"] }}
+                    analyses per month
+                </li>
+
+                <li>
+                    Up to
+                    {{ enterprise_plan["team_member_limit"] }}
+                    team members
+                </li>
+
+                <li>
+                    Up to
+                    {{ enterprise_plan["environment_limit"] }}
+                    environments
+                </li>
+
+                <li>
+                    {{ enterprise_plan["evidence_retention_months"] }}
+                    months of evidence retention
+                </li>
+
+                <li>
+                    Advanced reporting
+                </li>
+
+                <li>
+                    Governance controls
+                </li>
+
+                <li>
+                    Integrations
+                </li>
+
+                <li>
+                    Priority support
+                </li>
+            </ul>
+
+
+            <div class="business-pricing-card__actions">
+
+                <form
+                    method="post"
+                    action="/purchase/checkout"
+                >
+                    <input
+                        type="hidden"
+                        name="plan"
+                        value="enterprise"
+                    >
+
+                    <input
+                        type="hidden"
+                        name="billing_interval"
+                        value="monthly"
+                    >
+
+                    <button
+                        class="button button--primary button--full"
+                        type="submit"
+                    >
+                        Start Monthly
+                    </button>
+                </form>
+
+                <form
+                    method="post"
+                    action="/purchase/checkout"
+                >
+                    <input
+                        type="hidden"
+                        name="plan"
+                        value="enterprise"
+                    >
+
+                    <input
+                        type="hidden"
+                        name="billing_interval"
+                        value="annual"
+                    >
+
+                    <button
+                        class="button button--secondary button--full"
+                        type="submit"
+                    >
+                        Start Annual
+                    </button>
+                </form>
+
+            </div>
+
+        </article>
+
+    </div>
+
+
+    <div class="business-pricing-custom">
+
+        <div>
+
+            <span class="eyebrow">
+                Need more?
+            </span>
+
+            <h2>
+                Requirements beyond standard Enterprise?
+            </h2>
+
+            <p>
+                Contact PreClear to discuss higher capacity,
+                expanded organizational requirements,
+                deployment needs, or custom support.
+            </p>
+
+        </div>
+
+        <a
+            class="button button--secondary"
+            href="/contact"
+        >
+            Contact Sales
+        </a>
+
+    </div>
+
+</section>
+
+{% endblock %}

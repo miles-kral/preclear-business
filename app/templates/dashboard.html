@@ -1,0 +1,1266 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Dashboard | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Dashboard
+{% endblock %}
+
+{% block content %}
+
+<section class="business-dashboard-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Organization protection
+        </p>
+
+        <h1 class="page-title">
+            Welcome, {{ current_user.name }}.
+        </h1>
+
+        <p class="page-description">
+            Review your organizations recent trust decisions,
+            risk activity, reporting status, and governance evidence.
+        </p>
+
+    </div>
+
+    <div class="business-dashboard-header__actions">
+
+        {% if current_membership.role in ["owner", "admin", "analyst"] %}
+            <a
+                class="button button--primary"
+                href="/analyze"
+            >
+                Analyze a File
+            </a>
+        {% endif %}
+
+        <a
+            class="button button--outline"
+            href="/reports"
+        >
+            View Reports
+        </a>
+
+    </div>
+
+</section>
+
+
+<section class="business-dashboard-status-grid">
+
+    <article class="card business-dashboard-status business-dashboard-status--protection business-dashboard-status--{{ protection_status.key }}">
+
+        <div class="business-dashboard-status__icon">
+
+            <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path d="M12 3 5 6v5c0 4.5 2.8 8.6 7 10 4.2-1.4 7-5.5 7-10V6l-7-3Z" />
+                <path d="m9 12 2 2 4-4" />
+            </svg>
+
+        </div>
+
+        <p class="business-dashboard-status__label">
+            Protection Status
+        </p>
+
+        <p class="business-dashboard-status__value">
+            {{ protection_status.label }}
+        </p>
+
+        <p class="business-dashboard-status__description">
+            {{ protection_status.description }}
+        </p>
+
+    </article>
+
+
+    <a
+        class="
+            card
+            business-dashboard-status
+            business-dashboard-status--total
+            business-dashboard-status--link
+        "
+        href="/ledger"
+    >
+
+        <div class="business-dashboard-status__icon">
+
+            <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path d="M5 4h14v16H5z" />
+                <path d="M8 8h8" />
+                <path d="M8 12h8" />
+                <path d="M8 16h5" />
+            </svg>
+
+        </div>
+
+        <p class="business-dashboard-status__label">
+            Analyses this month
+        </p>
+
+        <p class="business-dashboard-status__value">
+            {{ total_decisions }}
+        </p>
+
+        <p class="business-dashboard-status__description">
+            Files reviewed before internal access.
+        </p>
+
+    </a>
+
+    <a
+        class="
+            card
+            business-dashboard-status
+            business-dashboard-status--safe
+            business-dashboard-status--link
+        "
+        href="/ledger?decision=LOOKS_SAFE"
+    >
+
+        <div class="business-dashboard-status__icon">
+
+            <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path
+                    d="M12 3 5 6v5c0 4.5 2.8 8.6 7 10 4.2-1.4 7-5.5 7-10V6l-7-3Z"
+                />
+                <path
+                    d="m9 12 2 2 4-4"
+                />
+            </svg>
+
+        </div>
+
+        <p class="business-dashboard-status__label">
+            Looks Safe
+        </p>
+
+        <p class="business-dashboard-status__value">
+            {{ looks_safe_count }}
+        </p>
+
+        <p class="business-dashboard-status__description">
+            Files cleared by PreClear analysis.
+        </p>
+
+    </a>
+
+
+    <a
+        class="
+            card
+            business-dashboard-status
+            business-dashboard-status--warning
+            business-dashboard-status--link
+        "
+        href="/ledger?decision=USE_CAUTION"
+    >
+
+        <div class="business-dashboard-status__icon">
+
+            <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path d="M12 3 3 20h18L12 3Z" />
+                <path d="M12 9v4" />
+                <path d="M12 17h.01" />
+            </svg>
+
+        </div>
+
+        <p class="business-dashboard-status__label">
+            Use caution
+        </p>
+
+        <p class="business-dashboard-status__value">
+            {{ use_caution_count }}
+        </p>
+
+        <p class="business-dashboard-status__description">
+            Files requiring additional verification.
+        </p>
+
+    </a>
+
+
+    <a
+        class="
+            card
+            business-dashboard-status
+            business-dashboard-status--danger
+            business-dashboard-status--link
+        "
+        href="/ledger?decision=DO_NOT_OPEN"
+    >
+
+        <div class="business-dashboard-status__icon">
+
+            <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <circle cx="12" cy="12" r="9" />
+                <path d="m8 8 8 8" />
+                <path d="m16 8-8 8" />
+            </svg>
+
+        </div>
+
+        <p class="business-dashboard-status__label">
+            Do not open
+        </p>
+
+        <p class="business-dashboard-status__value">
+            {{ do_not_open_count }}
+        </p>
+
+        <p class="business-dashboard-status__description">
+            High-risk files stopped before trust was granted.
+        </p>
+
+    </a>
+
+</section>
+
+
+<section class="business-dashboard-grid">
+
+    <div class="business-dashboard-main-column">
+
+        <article class="card business-dashboard-panel">
+
+            <div class="business-dashboard-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Risk trend
+                    </p>
+
+                    <h2>
+                        Organizational Risk Trend
+                    </h2>
+
+                    <p>
+                        Track how elevated and high-risk trust decisions
+                        are changing over time.
+                    </p>
+
+                </div>
+
+                <span
+                    class="
+                        status-badge
+                        status-badge--neutral
+                        status-badge--small
+                    "
+                >
+                    Last 30 Days
+                </span>
+
+            </div>
+
+
+            <div class="business-risk-chart">
+
+                <div class="business-risk-chart__summary">
+
+                    <div>
+
+                        <span>
+                            Current risk index
+                        </span>
+
+                        <strong>
+                                {{ current_risk_index }}
+                        </strong>
+
+                    </div>
+
+                    <div
+                        class="
+                            business-risk-chart__change
+
+                            {% if risk_change < 0 %}
+                                business-risk-chart__change--good
+                            {% elif risk_change > 0 %}
+                                business-risk-chart__change--bad
+                            {% else %}
+                                business-risk-chart__change--neutral
+                            {% endif %}
+                        "
+                    >
+
+                        <span>
+                            {% if risk_change < 0 %}
+                                ↓ {{ risk_change|abs }} points
+                            {% elif risk_change > 0 %}
+                                ↑ {{ risk_change }} points
+                            {% else %}
+                                No change
+                            {% endif %}
+                        </span>
+
+                        <small>
+                            vs. previous 30 days
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="business-risk-chart__canvas">
+
+                    <div class="business-risk-chart__y-axis">
+                        <span>100</span>
+                        <span>75</span>
+                        <span>50</span>
+                        <span>25</span>
+                        <span>0</span>
+                    </div>
+
+
+                    <div class="business-risk-chart__plot">
+
+                        <div class="business-risk-chart__grid">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+
+
+                        <svg
+                            class="business-risk-chart__svg"
+                            viewBox="0 0 700 220"
+                            preserveAspectRatio="none"
+                            role="img"
+                            aria-label="Organizational risk trend over the last 30 days"
+                        >
+
+                            <defs>
+
+                                <linearGradient
+                                    id="riskTrendFill"
+                                    x1="0"
+                                    y1="0"
+                                    x2="0"
+                                    y2="1"
+                                >
+                                    <stop
+                                        offset="0%"
+                                        stop-color="#0a3278"
+                                        stop-opacity="0.18"
+                                    />
+
+                                    <stop
+                                        offset="100%"
+                                        stop-color="#0a3278"
+                                        stop-opacity="0"
+                                    />
+
+                                </linearGradient>
+
+                            </defs>
+
+
+                            <path
+                                class="business-risk-chart__area"
+                                d="{{ risk_trend_area_path }}"
+                            />
+
+
+                            <polyline
+                                class="business-risk-chart__line"
+                                points="{{ risk_trend_points }}"
+                            />
+
+
+                            {% for point in chart_points %}
+
+                                <circle
+                                    cx="{{ point.x }}"
+                                    cy="{{ point.y }}"
+                                    r="4"
+                                />
+
+                            {% endfor %}
+
+                        </svg>
+
+
+                        <div class="business-risk-chart__x-axis">
+
+                            {% for item in risk_trend %}
+
+                                <span>
+                                    {{ item.label }}
+                                </span>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="business-risk-chart__footer">
+
+                    <span class="business-risk-chart__legend">
+
+                        <i></i>
+
+                        Organizational risk index
+
+                    </span>
+
+                    <span>
+                        Lower is better
+                    </span>
+
+                </div>
+
+            </div>
+
+        </article>
+
+        <article class="card business-dashboard-panel">
+
+            <div class="business-dashboard-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                    Recent activity
+                    </p>
+
+                    <h2>
+                        Recent Trust Decisions
+                    </h2>
+
+                    <p>
+                        Your organizations latest analyzed files.
+                    </p>
+
+                </div>
+
+                <a
+                    class="button button--outline button--medium"
+                    href="/ledger"
+                >
+                    View Decision Ledger
+                </a>
+
+            </div>
+
+
+            <div class="business-dashboard-decisions">
+
+                {% if recent_decisions %}
+
+                    {% for record in recent_decisions %}
+
+                        {% set analysis = record.analysis %}
+
+                        <a
+                            class="business-dashboard-decision"
+                            href="/ledger/{{ analysis.id }}"
+                        >
+
+                            {% if analysis.decision == "LOOKS_SAFE" %}
+
+                                <span
+                                    class="
+                                        business-dashboard-decision__state
+                                        business-dashboard-decision__state--safe
+                                    "
+                                >
+                                    <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <path
+                                            d="M12 3 5 6v5c0 4.5 2.8 8.6 7 10 4.2-1.4 7-5.5 7-10V6l-7-3Z"
+                                        />
+                                        <path d="m9 12 2 2 4-4" />
+                                    </svg>
+                                </span>
+
+                            {% elif analysis.decision == "USE_CAUTION" %}
+
+                                <span
+                                    class="
+                                        business-dashboard-decision__state
+                                        business-dashboard-decision__state--caution
+                                    "
+                                >
+                                    <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <path d="M12 3 3 20h18L12 3Z" />
+                                        <path d="M12 9v4" />
+                                        <path d="M12 17h.01" />
+                                    </svg>
+                                </span>
+
+                            {% else %}
+
+                                <span
+                                    class="
+                                        business-dashboard-decision__state
+                                        business-dashboard-decision__state--danger
+                                    "
+                                >
+                                    <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <circle cx="12" cy="12" r="9" />
+                                        <path d="m8 8 8 8" />
+                                        <path d="m16 8-8 8" />
+                                    </svg>
+                                </span>
+
+                            {% endif %}
+
+
+                            <div class="business-dashboard-decision__body">
+
+                                <div>
+
+                                    <strong>
+                                        {{ analysis.filename }}
+                                    </strong>
+
+                                    <span>
+                                        {{
+                                            analysis.environment.name
+                                            if analysis.environment
+                                            else "No environment"
+                                        }}
+                                        .
+                                        {{
+                                            analysis.user.name
+                                            if analysis.user
+                                            else "System"
+                                        }}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="business-dashboard-decision__meta">
+
+                                    {% if analysis.decision == "LOOKS_SAFE" %}
+
+                                        <strong
+                                            class="
+                                                business-dashboard-decision__label
+                                                business-dashboard-decision__label--safe
+                                            "
+                                        >
+                                            Looks Safe
+                                        </strong>
+
+                                    {% elif analysis.decision == "USE_CAUTION" %}
+
+                                        <strong
+                                            class="
+                                                business-dashboard-decision__label
+                                                business-dashboard-decision__label--caution
+                                            "
+                                        >
+                                            Use Caution
+                                        </strong>
+
+                                    {% else %}
+
+                                        <strong
+                                            class="
+                                                business-dashboard-decision__label
+                                                business-dashboard-decision__label--danger
+                                            "
+                                        >
+                                            Do Not Open
+                                        </strong>
+
+                                    {% endif %}
+
+                                    <span>
+                                        {{ record.display_time }}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </a>
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <div class="business-dashboard-decisions__empty">
+
+                        <p>
+                            No Trust Decisions have been recorded yet.
+                        </p>
+
+                        {% if current_membership.role in ["owner", "admin", "analyst"] %}
+                            <a
+                                class="button button--primary"
+                                href="/analyze"
+                            >
+                                Analyze Your First File
+                            </a>
+                            {% endif %}
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </article>
+
+        <article class="card business-dashboard-panel">
+
+            <div class="business-dashboard-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Organizational risk
+                    </p>
+
+                    <h2>
+                        Trust Decision Activity
+                    </h2>
+
+                    <p>
+                        Distribution of your organizations recent file decisions.
+                    </p>
+
+                </div>
+
+                <span class="status-badge status-badge--neutral status-badge--small">
+                    Last 30 Days
+                </span>
+
+            </div>
+
+
+            <div class="business-dashboard-risk">
+
+                <div class="business-dashboard-risk__summary">
+
+                    <a
+                        class="
+                            business-dashboard-risk__item
+                            business-dashboard-risk__item--link
+                        "
+                        href="/ledger?decision=LOOKS_SAFE"
+                    >
+
+                        <span class="business-dashboard-risk__dot business-dashboard-risk__dot--safe"></span>
+
+                        <div>
+                            <strong>
+                                {{ current_period_safe_pct }}%
+                            </strong>
+
+                            <span>
+                                Looks Safe
+                            </span>
+                        </div>
+
+                    </a>
+
+
+                    <a
+                        class="
+                            business-dashboard-risk__item
+                            business-dashboard-risk__item--link
+                        "
+                        href="/ledger?decision=USE_CAUTION"
+                    >
+                        <span class="business-dashboard-risk__dot business-dashboard-risk__dot--caution"></span>
+
+                        <div>
+                            <strong>
+                                {{ current_period_caution_pct }}%
+                            </strong>
+
+                            <span>
+                                Use Caution
+                            </span>
+                        </div>
+
+                    </a>
+
+
+                    <a
+                        class="
+                            business-dashboard-risk__item
+                            business-dashboard-risk__item--link
+                        "
+                        href="/ledger?decision=DO_NOT_OPEN"
+                    >
+
+                        <span class="business-dashboard-risk__dot business-dashboard-risk__dot--danger"></span>
+
+                        <div>
+                            <strong>
+                                {{ current_period_danger_pct }}%
+                            </strong>
+
+                            <span>
+                                Do Not Open
+                            </span>
+                        </div>
+
+                    </a>
+
+                </div>
+
+
+                <div
+                    class="business-dashboard-risk__bar"
+                    data-safe="{{ current_period_safe_pct }}"
+                    data-caution="{{ current_period_caution_pct }}"
+                    data-danger="{{ current_period_danger_pct }}"
+                >
+
+                    <span
+                        class="business-dashboard-risk__bar-safe"
+                    ></span>
+
+                    <span
+                        class="business-dashboard-risk__bar-caution"
+                    ></span>
+
+                    <span
+                        class="business-dashboard-risk__bar-danger"
+                    ></span>
+
+                </div>
+
+                <script>
+                    document.addEventListener(
+                        "DOMContentLoaded",
+                        function () {
+
+                            const riskBar =
+                                document.querySelector(
+                                    ".business-dashboard-risk__bar"
+                                );
+
+                            if (!riskBar) {
+                                return;
+                            }
+
+                            const safeBar =
+                                riskBar.querySelector(
+                                    ".business-dashboard-risk__bar-safe"
+                                );
+
+                            const cautionBar =
+                                riskBar.querySelector(
+                                    ".business-dashboard-risk__bar-caution"
+                                );
+
+                            const dangerBar =
+                                riskBar.querySelector(
+                                    ".business-dashboard-risk__bar-danger"
+                                );
+
+                            safeBar.style.width =
+                                riskBar.dataset.safe + "%";
+
+                            cautionBar.style.width =
+                                riskBar.dataset.caution + "%";
+
+                            dangerBar.style.width =
+                                riskBar.dataset.danger + "%";
+                        }
+                    );
+                </script>
+
+
+                <p class="business-dashboard-risk__note">
+
+                    {{ current_period_attention_count }}
+
+                    {% if current_period_attention_count == 1 %}
+                        file required
+                    {% else %}
+                        files required
+                    {% endif %}
+
+                    additional attention during the last 30 days.
+
+                </p>
+
+            </div>
+
+        </article>
+
+    </div>
+
+
+    <aside class="business-dashboard-side-column">
+
+
+        <article class="card business-dashboard-panel">
+
+            <div class="business-dashboard-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Governance
+                    </p>
+
+                    <h2>
+                        Evidence Status
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-dashboard-evidence">
+
+                <div>
+                    <span>
+                        Audit logging
+                    </span>
+
+                    <strong class="business-dashboard-good">
+                        {% if audit_event_count > 0 %}
+                            Active
+                        {% else %}
+                            Ready
+                        {% endif %}
+                    </strong>
+                </div>
+
+
+                <div>
+                    <span>
+                        Active environments
+                    </span>
+
+                    <strong>
+                        {{ active_environment_count }}
+                    </strong>
+                </div>
+
+
+                <div>
+                    <span>
+                        Team members
+                    </span>
+
+                    <strong>
+                        {{ active_team_member_count }}
+                    </strong>
+                </div>
+
+                <div class="business-dashboard-evidence">
+
+                    <a
+                        class="business-dashboard-evidence__link"
+                         href="/ledger?review=open"
+                    >
+                        <span>
+                            Open Evidence
+                        </span>
+
+                        <strong>
+                            {{ open_evidence_count }}
+                        </strong>
+                    </a>
+
+
+                    <a
+                        class="business-dashboard-evidence__link"
+                        href="/ledger?review=reviewed"
+                    >
+                        <span>
+                            Reviewed
+                        </span>
+
+                        <strong>
+                            {{ reviewed_evidence_count }}
+                        </strong>
+                    </a>
+
+
+                    <a
+                        class="business-dashboard-evidence__link"
+                        href="/ledger?review=resolved"
+                    >
+                        <span>
+                            Resolved
+                        </span>
+
+                        <strong class="business-dashboard-good">
+                            {{ resolved_evidence_count }}
+                        </strong>
+                    </a>
+
+                </div>
+            </div>
+
+
+            <a
+                class="button button--outline button--full"
+                href="/ledger"
+            >
+                View Decision Ledger
+            </a>
+
+        </article>
+
+
+        <article class="card business-dashboard-panel">
+
+            <div class="business-dashboard-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Subscription
+                    </p>
+
+                    <h2>
+                        {{ subscription_plan_label }}
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-dashboard-usage">
+
+                <div class="business-dashboard-usage__item">
+
+                    <div class="business-dashboard-usage__numbers">
+
+                        <strong>
+                            Analyses
+                        </strong>
+
+                        <span>
+                            {% if analysis_limit %}
+                                {{ analysis_usage }} of {{ analysis_limit }}
+                            {% else %}
+                                {{ analysis_usage }} used
+                            {% endif %}
+                        </span>
+
+                    </div>
+
+
+                    {% if analysis_limit %}
+
+                        <div
+                            class="
+                                business-dashboard-usage__bar
+                                {% if analysis_usage_pct >= 100 %}
+                                    business-dashboard-usage__bar--limit
+                                    {% elif analysis_usage_pct >= 80 %}
+                                        business-dashboard-usage__bar--warning
+                                    {% endif %}
+                                "
+                            data-usage="{{ analysis_usage_pct }}"
+                            >
+                            <span></span>
+                        </div>
+
+                        {% if analysis_usage_pct >= 100 %}
+
+                            <p class="business-dashboard-usage__message business-dashboard-usage__message--limit">
+                                Included analysis allowance reached.
+                                Analysis remains available.
+                            </p>
+
+                        {% elif analysis_usage_pct >= 80 %}
+
+                            <p class="business-dashboard-usage__message business-dashboard-usage__message--warning">
+                                {{ analysis_remaining }}
+                                analyses remaining this billing period.
+                            </p>
+
+                        {% else %}
+
+                            <p>
+                                {{ analysis_remaining }}
+                                analyses remaining this billing period.
+                            </p>
+
+                        {% endif %}
+
+                    {% else %}
+
+                        <p>
+                            Custom enterprise analysis capacity.
+                        </p>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="business-dashboard-usage__item">
+
+                    <div class="business-dashboard-usage__numbers">
+
+                        <strong>
+                            Team members
+                        </strong>
+
+                        <span>
+                            {% if team_member_limit %}
+                                {{ team_member_usage }} of {{ team_member_limit }}
+                            {% else %}
+                                {{ team_member_usage }} active
+                            {% endif %}
+                        </span>
+
+                    </div>
+
+
+                    {% if team_member_limit %}
+
+                        <div
+                            class="business-dashboard-usage__bar"
+                            data-usage="{{ team_member_usage_pct }}"
+                        >
+                            <span></span>
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="business-dashboard-usage__item">
+
+                    <div class="business-dashboard-usage__numbers">
+
+                        <strong>
+                            Environments
+                        </strong>
+
+                        <span>
+                            {% if environment_limit %}
+                                {{ environment_usage }} of {{ environment_limit }}
+                            {% else %}
+                                {{ environment_usage }} active
+                            {% endif %}
+                        </span>
+
+                    </div>
+
+
+                    {% if environment_limit %}
+
+                        <div
+                            class="business-dashboard-usage__bar"
+                            data-usage="{{ environment_usage_pct }}"
+                        >
+                            <span></span>
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <script>
+            document.addEventListener(
+                "DOMContentLoaded",
+                function () {
+
+                    const usageBars =
+                        document.querySelectorAll(
+                            ".business-dashboard-usage__bar"
+                        );
+
+                    usageBars.forEach(
+                        function (usageBar) {
+
+                            const fill =
+                                usageBar.querySelector(
+                                    "span"
+                                );
+
+                            if (!fill) {
+                                return;
+                            }
+
+                            fill.style.width =
+                                usageBar.dataset.usage + "%";
+                        }
+                    );
+                }
+            );
+            </script>
+
+
+            <a
+                class="button button--outline button--full"
+                href="/settings"
+            >
+                Manage Subscription
+            </a>
+
+        </article>
+
+
+        <article class="card business-dashboard-panel">
+
+            <div class="business-dashboard-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Team activity
+                    </p>
+
+                    <h2>
+                        Recent Actions
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-dashboard-team-activity">
+
+                {% if recent_team_activity %}
+
+                    {% for activity in recent_team_activity %}
+
+                        <div>
+
+                            <span class="business-dashboard-team-avatar">
+                                {{ activity.initials }}
+                            </span>
+
+                            <p>
+
+                                <strong>
+                                    {{ activity.user_name }}
+                                </strong>
+
+                                {{ activity.description }}
+
+                                <span>
+                                    {{ activity.display_time }}
+                                </span>
+
+                            </p>
+
+                        </div>
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <div>
+
+                        <span class="business-dashboard-team-avatar">
+                            PC
+                        </span>
+
+                        <p>
+                            <strong>
+                                PreClear
+                            </strong>
+
+                            No organization activity has been recorded yet.
+                        </p>
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <a
+                class="button button--outline button--medium"
+                href="/activity"
+            >
+                View Activity Log
+            </a>
+
+        </article>
+
+    </aside>
+
+</section>
+
+{% endblock %}

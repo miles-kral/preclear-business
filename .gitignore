@@ -1,0 +1,38 @@
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# SQLite databases
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Generated files
+uploads/
+reports/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

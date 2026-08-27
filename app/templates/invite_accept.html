@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}
+Join Organization | PreClear Business
+{% endblock %}
+
+{% block content %}
+
+<section class="auth-page">
+
+    <div class="auth-card">
+
+        {% if invitation %}
+
+            <div class="auth-card__header">
+
+                <p class="eyebrow">
+                    PreClear Business
+                </p>
+
+                <h1>
+                    Join {{ organization.name }}
+                </h1>
+
+                <p>
+                    You have been invited as
+                    <strong>
+                        {{ invitation.role|title }}
+                    </strong>.
+                </p>
+
+            </div>
+
+        {% else %}
+
+            <div class="auth-card__header">
+
+                <p class="eyebrow">
+                    PreClear Business
+                </p>
+
+                <h1>
+                    Invitation unavailable
+                </h1>
+
+            </div>
+
+        {% endif %}
+
+
+        {% if error %}
+
+            <div class="alert alert--danger">
+                {{ error }}
+            </div>
+
+        {% endif %}
+
+
+        {% if invitation %}
+
+            <form
+                class="auth-form"
+                method="post"
+                action="/invite/{{ invitation.token }}"
+            >
+
+                <label>
+                    Business email
+
+                    <input
+                        type="email"
+                        value="{{ invitation.email }}"
+                        disabled
+                    >
+                </label>
+
+
+                {% if existing_user %}
+
+                    <p class="business-invite-existing">
+                        You already have a PreClear Business
+                        account. Enter your password to join
+                        this organization.
+                    </p>
+
+                {% else %}
+
+                    <label>
+                        Your name
+
+                        <input
+                            type="text"
+                            name="name"
+                            autocomplete="name"
+                            required
+                        >
+                    </label>
+
+                {% endif %}
+
+
+                <label>
+                    Password
+
+                    <input
+                        type="password"
+                        name="password"
+                        autocomplete="{% if existing_user %}current-password{% else %}new-password{% endif %}"
+                        minlength="10"
+                        required
+                    >
+                </label>
+
+
+                {% if not existing_user %}
+
+                    <label>
+                        Confirm password
+
+                        <input
+                            type="password"
+                            name="password_confirm"
+                            autocomplete="new-password"
+                            minlength="10"
+                            required
+                        >
+                    </label>
+
+                {% endif %}
+
+
+                <button
+                    class="button button--primary button--full"
+                    type="submit"
+                >
+                    Join Organization
+                </button>
+
+            </form>
+
+        {% endif %}
+
+    </div>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,319 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+My Account | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+My Account
+{% endblock %}
+
+{% block content %}
+
+<section class="business-settings-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Personal account
+        </p>
+
+        <h1 class="page-title">
+            My Account
+        </h1>
+
+        <p class="page-description">
+            Manage your personal profile and account security.
+        </p>
+
+    </div>
+
+</section>
+
+
+{% if account_message %}
+
+    <div
+        class="
+            business-account-message
+            {% if account_message['type'] == 'error' %}
+                business-account-message--error
+            {% else %}
+                business-account-message--success
+            {% endif %}
+        "
+    >
+        {{ account_message["message"] }}
+    </div>
+
+{% endif %}
+
+
+<section class="business-settings-grid">
+
+    <div class="business-settings-main">
+
+        <article class="card business-settings-panel">
+
+            <div class="business-settings-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Profile
+                    </p>
+
+                    <h2>
+                        Personal information
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <form
+                method="post"
+                action="/account/profile"
+                class="business-account-form"
+            >
+
+                <div class="business-account-field">
+
+                    <label for="account-name">
+                        Name
+                    </label>
+
+                    <input
+                        id="account-name"
+                        name="name"
+                        type="text"
+                        value="{{ current_user.name }}"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="business-account-field">
+
+                    <label>
+                        Email address
+                    </label>
+
+                    <input
+                        type="email"
+                        value="{{ current_user.email }}"
+                        disabled
+                    >
+
+                    <span class="business-account-field__help">
+                        Email changes are not available yet.
+                    </span>
+
+                </div>
+
+
+                <div class="business-account-field">
+
+                    <label>
+                        Organization
+                    </label>
+
+                    <input
+                        type="text"
+                        value="{{ current_organization.name }}"
+                        disabled
+                    >
+
+                </div>
+
+
+                <div class="business-account-field">
+
+                    <label>
+                        Role
+                    </label>
+
+                    <input
+                        type="text"
+                        value="{{ current_membership.role|title }}"
+                        disabled
+                    >
+
+                </div>
+
+
+                <div class="business-account-actions">
+
+                    <button
+                        class="button button--primary"
+                        type="submit"
+                    >
+                        Save Profile
+                    </button>
+
+                </div>
+
+            </form>
+
+        </article>
+
+
+        <article class="card business-settings-panel">
+
+            <div class="business-settings-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Security
+                    </p>
+
+                    <h2>
+                        Change password
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <form
+                method="post"
+                action="/account/password"
+                class="business-account-form"
+            >
+
+                <div class="business-account-field">
+
+                    <label for="current-password">
+                        Current password
+                    </label>
+
+                    <input
+                        id="current-password"
+                        name="current_password"
+                        type="password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="business-account-field">
+
+                    <label for="new-password">
+                        New password
+                    </label>
+
+                    <input
+                        id="new-password"
+                        name="new_password"
+                        type="password"
+                        autocomplete="new-password"
+                        minlength="10"
+                        required
+                    >
+
+                    <span class="business-account-field__help">
+                        Use at least 10 characters.
+                    </span>
+
+                </div>
+
+
+                <div class="business-account-field">
+
+                    <label for="confirm-password">
+                        Confirm new password
+                    </label>
+
+                    <input
+                        id="confirm-password"
+                        name="confirm_password"
+                        type="password"
+                        autocomplete="new-password"
+                        minlength="10"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="business-account-actions">
+
+                    <button
+                        class="button button--primary"
+                        type="submit"
+                    >
+                        Change Password
+                    </button>
+
+                </div>
+
+            </form>
+
+        </article>
+
+    </div>
+
+
+    <aside class="business-settings-side">
+
+        <article class="card business-settings-panel">
+
+            <div class="business-settings-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Account access
+                    </p>
+
+                    <h2>
+                        Your membership
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-settings-details">
+
+                <div>
+                    <span>Status</span>
+                    <strong>
+                        {% if current_user.is_active %}
+                            Active
+                        {% else %}
+                            Inactive
+                        {% endif %}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Role</span>
+                    <strong>
+                        {{ current_membership.role|title }}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Organization</span>
+                    <strong>
+                        {{ current_organization.name }}
+                    </strong>
+                </div>
+
+            </div>
+
+        </article>
+
+    </aside>
+
+</section>
+
+{% endblock %}

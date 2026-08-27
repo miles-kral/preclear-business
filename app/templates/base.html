@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <meta
+        name="robots"
+        content="{{ robots_content if robots_content else 'index, follow' }}"
+    >
+
+    <title>
+        {{ page_title if page_title else "PreClear Business" }}
+    </title>
+
+    <meta
+        name="description"
+        content="{{ meta_description if meta_description else 'PreClear Business helps organizations inspect external files before internal access and maintain a clear, auditable record of every trust decision.' }}"
+    >
+
+    <link
+        rel="canonical"
+        href="{{ canonical_url if canonical_url else request.url }}"
+    >
+
+    <meta
+        property="og:type"
+        content="website"
+    >
+
+    <meta
+        property="og:site_name"
+        content="PreClear Business"
+    >
+
+    <meta
+        property="og:title"
+        content="{{ page_title if page_title else 'PreClear Business' }}"
+    >
+
+    <meta
+        property="og:image"
+        content="{{ social_image_url if social_image_url else request.base_url ~ 'static/preclear-business-social.png' }}"
+    >
+
+    <meta
+        property="og:image:alt"
+        content="PreClear Business - Know before you trust."
+    >
+
+    <meta
+        name="twitter:image"
+        content="{{ social_image_url if social_image_url else request.base_url ~ 'static/preclear-business-social.png' }}"
+    >
+
+    <meta
+        property="og:description"
+        content="{{ meta_description if meta_description else 'PreClear Business helps organizations inspect external files before internal access and maintain a clear, auditable record of every trust decision.' }}"
+    >
+
+    <meta
+        property="og:url"
+        content="{{ canonical_url if canonical_url else request.url }}"
+    >
+
+    <meta
+        name="twitter:card"
+        content="summary_large_image"
+    >
+
+    <meta
+        name="twitter:title"
+        content="{{ page_title if page_title else 'PreClear Business' }}"
+    >
+
+    <meta
+        name="twitter:description"
+        content="{{ meta_description if meta_description else 'PreClear Business helps organizations inspect external files before internal access and maintain a clear, auditable record of every trust decision.' }}"
+    >
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "PreClear Cybersecurity, Inc.",
+        "url": "{{ canonical_url if canonical_url else request.base_url }}",
+        "logo": "{{ request.base_url }}static/preclear-shield.png"
+    }
+    </script>
+
+    {% block structured_data %}
+    {% endblock %}  
+
+    <link
+        rel="icon"
+        type="image/png"
+        href="/static/favicon.png"
+    >
+
+    <link
+        rel="apple-touch-icon"
+        href="/static/favicon.png"
+    >
+
+    <meta
+        name="theme-color"
+        content="#071b33"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/static/css/preclear.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/static/styles.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/static/css/components.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/static/css/preclear-business.css"
+    >
+</head>
+
+<body>
+
+    <header class="business-header">
+        <div class="business-header__inner">
+
+            <a
+                class="business-header__brand"
+                href="/"
+                aria-label="PreClear Business home"
+            >
+                <img
+                    class="business-header__shield"
+                    src="/static/preclear-shield.png"
+                    alt=""
+                >
+
+                <span class="business-header__name">
+                    <strong>PreClear</strong>
+                    <span>Business</span>
+                </span>
+            </a>
+
+
+            <nav
+                class="business-header__nav"
+                aria-label="Main navigation"
+            >
+                <a href="/#how">
+                    How It Works
+                </a>
+
+                <a href="/#governance">
+                    Governance
+                </a>
+
+                <a href="/pricing">
+                    Pricing
+                </a>
+
+                <a href="/contact">
+                    Contact Us
+                </a>
+            </nav>
+
+
+            <div class="business-header__actions">
+
+                <a
+                    class="business-header__login"
+                    href="/login"
+                >
+                    Log In
+                </a>
+
+                <a
+                    class="button button--primary"
+                    href="/pricing"
+                >
+                    Start Small Business
+                </a>
+
+            </div>
+
+        </div>
+    </header>
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer class="business-footer">
+
+        <div class="business-footer__inner">
+
+            <div class="business-footer__brand">
+
+                <a
+                    class="business-footer__brand-lockup"
+                    href="/"
+                >
+                    <img
+                        class="business-footer__shield"
+                        src="/static/preclear-shield.png"
+                        alt=""
+                    >
+
+                    <span class="business-footer__name">
+                        <strong>PreClear</strong>
+                        <span>Business</span>
+                    </span>
+                </a>
+
+                <p>
+                    Pre-ingress protection, reporting,
+                    and governance for organizations.
+                </p>
+
+                <strong class="business-footer__tagline">
+                    Know before you trust.
+                </strong>
+
+            </div>
+
+
+            <div class="business-footer__links">
+
+                <div>
+                    <h3>Product</h3>
+
+                    <a href="/#how">
+                        How It Works
+                    </a>
+
+                    <a href="/#governance">
+                        Governance
+                    </a>
+
+                    <a href="/pricing">
+                        Pricing
+                    </a>
+                </div>
+
+
+                <div>
+                    <h3>Company</h3>
+
+                    <a href="/about">
+                        About PreClear
+                    </a>
+
+                    <a href="/contact">
+                        Contact Us
+                    </a>
+
+                    <a href="/security">
+                        Security
+                    </a>
+                </div>
+
+
+                <div>
+                    <h3>Legal</h3>
+
+                    <a href="/privacy">
+                        Privacy Policy
+                    </a>
+
+                    <a href="/terms">
+                        Terms of Service
+                    </a>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="business-footer__bottom">
+
+            <span>
+                © 2026 PreClear Cybersecurity, Inc.
+            </span>
+
+            <span>
+                PreClear Business
+            </span>
+
+        </div>
+
+    </footer>
+
+</body>
+</html>

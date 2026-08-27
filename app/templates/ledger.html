@@ -1,0 +1,789 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Decision Ledger | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Decision Ledger
+{% endblock %}
+
+{% block content %}
+
+<section class="business-ledger-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Organizational evidence
+        </p>
+
+        <h1 class="page-title">
+            Decision Ledger
+        </h1>
+
+        <p class="page-description">
+            Review every PreClear Trust Decision recorded
+            for your organization.
+        </p>
+
+    </div>
+
+
+    <div class="business-page-actions">
+        <a
+            class="button button--primary"
+            href="/ledger/export/pdf"
+        >
+            Download PDF
+        </a>
+
+        {% if current_membership.role in ["owner", "admin", "analyst"] %}
+            <a
+                class="button button--primary"
+                href="/analyze"
+            >
+                Analyze a File
+            </a>
+        {% endif %}
+    </div>
+
+</section>
+
+
+<section class="business-ledger-summary">
+
+    <article class="card business-ledger-summary-card business-ledger-summary-card--total">
+
+        <span>
+            Total Decisions
+        </span>
+
+        <strong class="business-ledger-summary-card__value">
+            {{ analyses|length }}
+        </strong>
+
+    </article>
+
+
+    <article class="card business-ledger-summary-card business-ledger-summary-card--safe">
+
+        <span>
+            Looks Safe
+        </span>
+
+        <strong class="business-ledger-summary-card__value">
+            {{
+                analyses
+                | selectattr(
+                    "decision",
+                    "equalto",
+                    "LOOKS_SAFE"
+                )
+                | list
+                | length
+            }}
+        </strong>
+
+    </article>
+
+
+    <article class="card business-ledger-summary-card business-ledger-summary-card--caution">
+
+        <span>
+            Use Caution
+        </span>
+
+        <strong class="business-ledger-summary-card__value">
+            {{
+                analyses
+                | selectattr(
+                    "decision",
+                    "equalto",
+                    "USE_CAUTION"
+                )
+                | list
+                | length
+            }}
+        </strong>
+
+    </article>
+
+
+    <article class="card business-ledger-summary-card business-ledger-summary-card--danger">
+
+        <span>
+            Do Not Open
+        </span>
+
+        <strong class="business-ledger-summary-card__value">
+            {{
+                analyses
+                | selectattr(
+                    "decision",
+                    "equalto",
+                    "DO_NOT_OPEN"
+                )
+                | list
+                | length
+            }}
+        </strong>
+
+    </article>
+
+</section>
+
+
+<section class="card business-ledger-panel">
+
+    <div class="business-ledger-toolbar">
+
+        <div class="business-ledger-search">
+
+            <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+            </svg>
+
+            <input
+                id="ledger-search"
+                type="search"
+                placeholder="Search files, users, environments..."
+            >
+
+        </div>
+
+
+        <div class="business-ledger-filters">
+
+            <select id="ledger-decision-filter">
+                <option value="">
+                    All decisions
+                </option>
+
+                <option value="LOOKS_SAFE">
+                    Looks Safe
+                </option>
+
+                <option value="USE_CAUTION">
+                    Use Caution
+                </option>
+
+                <option value="DO_NOT_OPEN">
+                    Do Not Open
+                </option>
+            </select>
+
+
+            <select id="ledger-risk-filter">
+                <option value="">
+                    All risk levels
+                </option>
+
+                <option value="LOW">
+                    Low
+                </option>
+
+                <option value="MEDIUM">
+                    Medium
+                </option>
+
+                <option value="HIGH">
+                    High
+                </option>
+            </select>
+
+            <select id="ledger-review-filter">
+                <option value="">
+                    All review statuses
+                </option>
+
+                <option value="open">
+                    Open
+                </option>
+
+                <option value="reviewed">
+                    Reviewed
+                </option>
+
+                <option value="resolved">
+                    Resolved
+                </option>
+            </select>
+
+        </div>
+
+    </div>
+
+
+    {% if analyses %}
+
+        <div class="business-ledger-table-wrap">
+
+            <table class="business-ledger-table">
+
+                <thead>
+                    <tr>
+                        <th>
+                            File
+                        </th>
+
+                        <th>
+                            Trust Decision
+                        </th>
+
+                        <th>
+                            Environment
+                        </th>
+
+                        <th>
+                            Source
+                        </th>
+
+                        <th>
+                            Analyzed By
+                        </th>
+
+                        <th>
+                            Recorded
+                        </th>
+
+                        <th>
+                            Review Status
+                        </th>
+
+                        <th></th>
+                    </tr>
+                </thead>
+
+
+                <tbody
+                    id="ledger-records"
+                    data-review-deadline-days="{{ review_deadline_days }}"
+                >
+
+                    {% for record in ledger_records %}
+
+                        {% set analysis = record.analysis %}
+
+                        <tr
+                            class="business-ledger-row"
+                            data-decision="{{ analysis.decision }}"
+                            data-risk="{{ analysis.risk_level }}"
+                            data-review="{{ analysis.review_status or 'open' }}"
+                            data-created-at="{{ analysis.created_at.isoformat() }}"
+                            data-search="
+                                {{ analysis.filename }}
+                                {{ analysis.source or '' }}
+                                {{ analysis.environment.name if analysis.environment else '' }}
+                                {{ analysis.user.name if analysis.user else '' }}
+                            "
+                        >
+
+                            <td>
+
+                                <div class="business-ledger-file">
+
+                                    <span
+                                        class="
+                                            business-ledger-file__icon
+
+                                            {% if analysis.decision == 'LOOKS_SAFE' %}
+                                                business-ledger-file__icon--safe
+                                            {% elif analysis.decision == 'USE_CAUTION' %}
+                                                business-ledger-file__icon--caution
+                                            {% else %}
+                                                business-ledger-file__icon--danger
+                                            {% endif %}
+                                        "
+                                    >
+
+                                        {% if analysis.decision == "LOOKS_SAFE" %}
+
+                                            <svg
+                                                width="19"
+                                                height="19"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                            >
+                                                <path d="M12 3 5 6v5c0 4.5 2.8 8.6 7 10 4.2-1.4 7-5.5 7-10V6l-7-3Z" />
+                                                <path d="m9 12 2 2 4-4" />
+                                            </svg>
+
+                                        {% elif analysis.decision == "USE_CAUTION" %}
+
+                                            <svg
+                                                width="19"
+                                                height="19"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                            >
+                                                <path d="M12 3 3 20h18L12 3Z" />
+                                                <path d="M12 9v4" />
+                                                <path d="M12 17h.01" />
+                                            </svg>
+
+                                        {% else %}
+
+                                            <svg
+                                                width="19"
+                                                height="19"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                            >
+                                                <circle cx="12" cy="12" r="9" />
+                                                <path d="m8 8 8 8" />
+                                                <path d="m16 8-8 8" />
+                                            </svg>
+
+                                        {% endif %}
+
+                                    </span>
+
+
+                                    <div>
+
+                                        <strong>
+                                            {{ analysis.filename }}
+                                        </strong>
+
+                                        <span>
+                                            {{ analysis.risk_level|title }} Risk
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                            </td>
+
+                            <td>
+
+                                {% if analysis.decision == "LOOKS_SAFE" %}
+
+                                    <span class="business-ledger-badge business-ledger-badge--safe">
+                                        Looks Safe
+                                    </span>
+
+                                {% elif analysis.decision == "USE_CAUTION" %}
+
+                                    <span class="business-ledger-badge business-ledger-badge--caution">
+                                        Use Caution
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="business-ledger-badge business-ledger-badge--danger">
+                                        Do Not Open
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+                                {{ analysis.environment.name if analysis.environment else "—" }}
+                            </td>
+
+
+                            <td>
+                                {{
+                                    analysis.source
+                                    | default("—", true)
+                                    | replace("_", " ")
+                                    | title
+                                }}
+                            </td>
+
+
+                            <td>
+                                {{ analysis.user.name if analysis.user else "System" }}
+                            </td>
+
+
+                            <td>
+                                {{ record.display_time }}
+                            </td>
+
+                            <td>
+
+                                {% if analysis.review_status == "resolved" %}
+
+                                    <span
+                                        class="
+                                            business-ledger-review-badge
+                                            business-ledger-review-badge--resolved
+                                        "
+                                    >
+                                        Resolved
+                                    </span>
+
+                                {% elif analysis.review_status == "reviewed" %}
+
+                                    <span
+                                        class="
+                                            business-ledger-review-badge
+                                            business-ledger-review-badge--reviewed
+                                        "
+                                    >
+                                        Reviewed
+                                    </span>
+
+                                {% else %}
+
+                                    <span
+                                        class="
+                                            business-ledger-review-badge
+                                            business-ledger-review-badge--open
+                                        "
+                                    >
+                                        Open
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td class="business-ledger-action">
+
+                                <a
+                                    href="/ledger/{{ analysis.id }}"
+                                    class="text-link"
+                                >
+                                    Evidence Record
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <div
+            id="ledger-empty-filter"
+            class="business-ledger-filter-empty"
+            hidden
+        >
+            No Evidence Records match your current filters.
+        </div>
+
+    {% else %}
+
+        <div class="business-ledger-empty">
+
+            <div class="business-ledger-empty__icon">
+
+                <svg
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                >
+                    <path d="M5 4h14v16H5z" />
+                    <path d="M8 8h8" />
+                    <path d="M8 12h8" />
+                    <path d="M8 16h5" />
+                </svg>
+
+            </div>
+
+            <h2>
+                No Evidence Records yet
+            </h2>
+
+            <p>
+                Trust Decisions will appear here after
+                your organization analyzes files.
+            </p>
+
+            {% if current_membership.role in ["owner", "admin", "analyst"] %}
+                <a
+                    class="button button--primary"
+                    href="/analyze"
+                >
+                    Analyze Your First File
+                </a>
+            {% endif %}
+
+        </div>
+
+    {% endif %}
+
+</section>
+
+
+<script>
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const search =
+            document.getElementById(
+                "ledger-search"
+            );
+
+        const decisionFilter =
+            document.getElementById(
+                "ledger-decision-filter"
+            );
+
+        const riskFilter =
+            document.getElementById(
+                "ledger-risk-filter"
+            );
+
+        const reviewFilter =
+            document.getElementById(
+                "ledger-review-filter"
+            );
+
+        const rows =
+            Array.from(
+                document.querySelectorAll(
+                    ".business-ledger-row"
+                )
+            );
+
+        const emptyState =
+            document.getElementById(
+                "ledger-empty-filter"
+            );
+
+        const ledgerRecords =
+            document.getElementById(
+                "ledger-records"
+            );
+
+        const reviewDeadlineDays =
+            Number(
+                ledgerRecords.dataset.reviewDeadlineDays
+                || 7
+            );
+
+
+        function applyFilters() {
+
+            const query =
+                search.value
+                    .trim()
+                    .toLowerCase();
+
+            const decision =
+                decisionFilter.value;
+
+            const risk =
+                riskFilter.value;
+
+            const review =
+                reviewFilter.value;
+
+            let visibleCount = 0;
+
+
+            rows.forEach(
+                function (row) {
+
+                    const searchable =
+                        row.dataset.search
+                            .toLowerCase();
+
+                    const matchesSearch =
+                        !query ||
+                        searchable.includes(
+                            query
+                        );
+
+                    const matchesDecision =
+                        !decision ||
+                        row.dataset.decision
+                        === decision;
+
+                    const matchesRisk =
+                        !risk ||
+                        row.dataset.risk
+                        === risk;
+
+                    const createdAt =
+                        new Date(
+                            row.dataset.createdAt
+                            );
+
+                    const reviewDeadline =
+                        new Date();
+
+                    reviewDeadline.setDate(
+                        reviewDeadline.getDate()
+                        - reviewDeadlineDays
+                    );
+
+                    const isOverdue =
+                        row.dataset.review !== "resolved"
+                        && !Number.isNaN(
+                            createdAt.getTime()
+                        )
+                        && createdAt < reviewDeadline;
+
+                    const matchesReview =
+                        !review ||
+                        (
+                            review === "unresolved"
+                            && row.dataset.review !== "resolved"
+                        ) ||
+                        (
+                            review === "overdue"
+                            && isOverdue
+                        ) ||
+                        row.dataset.review === review;
+
+                    const visible =
+                        matchesSearch &&
+                        matchesDecision &&
+                        matchesRisk &&
+                        matchesReview;
+
+                    row.hidden =
+                        !visible;
+
+                    if (visible) {
+                        visibleCount += 1;
+                    }
+                }
+            );
+
+
+            if (emptyState) {
+                emptyState.hidden =
+                    visibleCount !== 0;
+            }
+        }
+
+
+        search.addEventListener(
+            "input",
+            applyFilters
+        );
+
+        decisionFilter.addEventListener(
+            "change",
+            applyFilters
+        );
+
+        riskFilter.addEventListener(
+            "change",
+            applyFilters
+        );
+
+        reviewFilter.addEventListener(
+            "change",
+            applyFilters
+        );
+
+        const urlParams =
+            new URLSearchParams(
+                window.location.search
+            );
+
+        const decisionParam =
+            urlParams.get(
+                "decision"
+            );
+
+        if (
+            decisionParam
+            && Array.from(
+                decisionFilter.options
+            ).some(
+                function (option) {
+                    return (
+                        option.value
+                        === decisionParam
+                    );
+                }
+            )
+        ) {
+            decisionFilter.value =
+                decisionParam;
+
+            applyFilters();
+        }
+
+        const reviewParam =
+            urlParams.get(
+                "review"
+            );
+
+        if (
+            reviewParam === "unresolved"
+            || reviewParam === "overdue"
+        ) {
+            const unresolvedOption =
+                document.createElement(
+                    "option"
+                );
+
+            unresolvedOption.value =
+                reviewParam;
+
+            unresolvedOption.textContent =
+                reviewParam === "overdue"
+                    ? "Overdue"
+                    : "Unresolved";
+
+            unresolvedOption.hidden = true;
+
+            reviewFilter.appendChild(
+                unresolvedOption
+            );
+
+            reviewFilter.value =
+                reviewParam;
+
+            applyFilters();
+
+        } else if (
+            reviewParam
+            && Array.from(
+                reviewFilter.options
+            ).some(
+                function (option) {
+                    return (
+                        option.value
+                        === reviewParam
+                    );
+                }
+            )
+        ) {
+            reviewFilter.value =
+                reviewParam;
+
+            applyFilters();
+        }
+
+    }
+);
+</script>
+
+{% endblock %}

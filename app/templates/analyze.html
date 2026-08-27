@@ -1,0 +1,888 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Analyze | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Analyze
+{% endblock %}
+
+{% block content %}
+
+
+
+<section class="business-analyze-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Pre-ingress analysis
+        </p>
+
+        <h1 class="page-title">
+            Analyze before you trust.
+        </h1>
+
+        <p class="page-description">
+            Review an external file before it enters
+            your organizations trusted environment.
+            PreClear records the Trust Decision and
+            preserves the evidence for your organization.
+        </p>
+
+    </div>
+
+</section>
+
+
+<section class="business-analyze-layout">
+
+    <div class="business-analyze-main">
+
+        <article class="card business-analyze-card">
+
+            <div class="business-analyze-card__header">
+
+                <div class="business-analyze-card__icon">
+
+                    <svg
+                        width="26"
+                        height="26"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            d="M12 3 5 6v5c0 4.5 2.8 8.6 7 10 4.2-1.4 7-5.5 7-10V6l-7-3Z"
+                        />
+                        <path d="M12 8v8" />
+                        <path d="M8 12h8" />
+                    </svg>
+
+                </div>
+
+                <div>
+                    <h2>
+                        Analyze a File
+                    </h2>
+
+                    <p>
+                        Select the business context,
+                        then choose the file you want
+                        PreClear to evaluate.
+                    </p>
+                </div>
+
+            </div>
+
+            {% if analysis_usage_status.status == "approaching_limit" %}
+
+                <div class="business-analysis-allowance business-analysis-allowance--warning">
+
+                    <div class="business-analysis-allowance__icon">
+
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="M12 3 3 20h18L12 3Z" />
+                            <path d="M12 9v4" />
+                            <path d="M12 17h.01" />
+                        </svg>
+
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Approaching monthly analysis allowance
+                        </strong>
+
+                        <p>
+                            Your organization has used
+                            {{ analysis_usage_status.usage }}
+                            of
+                            {{ analysis_usage_status.limit }}
+                            included analyses during the current period.
+                            Analysis will remain available if you exceed
+                            the included allowance.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            {% elif analysis_usage_status.status == "over_limit" %}
+
+                <div class="business-analysis-allowance business-analysis-allowance--limit">
+
+                    <div class="business-analysis-allowance__icon">
+
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M12 8v5" />
+                            <path d="M12 17h.01" />
+                        </svg>
+
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Monthly analysis allowance reached
+                        </strong>
+
+                        <p>
+                            Your organization has used
+                            {{ analysis_usage_status.usage }}
+                            analyses during the current period.
+                            PreClear will continue protecting your
+                            organization, but your included allowance
+                            of {{ analysis_usage_status.limit }}
+                            analyses has been reached.
+                        </p>
+
+                        <a href="/settings">
+                            Review subscription
+                        </a>
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+
+            <form
+                id="business-analysis-form"
+                class="business-analyze-form"
+                method="post"
+                action="/analyze"
+                enctype="multipart/form-data"
+            >
+
+                <div class="business-analyze-context-grid">
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Environment
+                        </span>
+
+                        <select
+                            name="environment"
+                            required
+                        >
+
+                            {% if environments %}
+
+                                {% for environment in environments %}
+
+                                    <option value="{{ environment.id }}">
+                                        {{ environment.name }}
+                                    </option>
+
+                                {% endfor %}
+
+                            {% else %}
+
+                                <option value="" disabled selected>
+                                    No active environments available
+                                </option>
+
+                            {% endif %}
+
+                        </select>
+
+                        <small>
+                            Where will this file be used?
+                        </small>
+
+                    </label>
+
+
+                    <label class="business-form-field">
+
+                        <span>
+                            File source
+                        </span>
+
+                        <select name="source">
+
+                            <option value="email">
+                                Email attachment
+                            </option>
+
+                            <option value="vendor">
+                                Vendor
+                            </option>
+
+                            <option value="customer">
+                                Customer
+                            </option>
+
+                            <option value="website">
+                                Website download
+                            </option>
+
+                            <option value="shared">
+                                Shared file
+                            </option>
+
+                            <option value="other">
+                                Other
+                            </option>
+
+                        </select>
+
+                        <small>
+                            How did the file reach your organization?
+                        </small>
+
+                    </label>
+
+                </div>
+
+
+                <label
+                    class="business-upload-zone"
+                    id="business-upload-zone"
+                >
+
+                    <input
+                        id="business-file-input"
+                        type="file"
+                        name="file"
+                        required
+                    >
+
+                    <span class="business-upload-zone__icon">
+
+                        <svg
+                            width="34"
+                            height="34"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                        >
+                            <path d="M12 16V4" />
+                            <path d="m7 9 5-5 5 5" />
+                            <path d="M5 20h14" />
+                        </svg>
+
+                    </span>
+
+                    <strong id="business-upload-title">
+                        Choose a file to analyze
+                    </strong>
+
+                    <span id="business-upload-filename">
+                        Select a file or drag and drop it here.
+                    </span>
+
+                    <span class="button button--outline">
+                        Select File
+                    </span>
+
+                </label>
+
+
+                <div class="business-analyze-form__footer">
+
+                    <div>
+
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                d="M12 3 5 6v5c0 4.5 2.8 8.6 7 10 4.2-1.4 7-5.5 7-10V6l-7-3Z"
+                            />
+                            <path d="m9 12 2 2 4-4" />
+                        </svg>
+
+                        <span>
+                            The Trust Decision will be recorded
+                            in your organizations Trust Journal.
+                        </span>
+
+                    </div>
+
+                    <button
+                        id="business-analyze-button"
+                        class="button button--primary"
+                        type="submit"
+                    >
+                        Analyze File
+                    </button>
+
+                </div>
+
+            </form>
+
+
+        </article>
+
+
+        <article class="business-analyze-explainer">
+
+            <div>
+
+                <span class="business-analyze-step">
+                    1
+                </span>
+
+                <div>
+                    <strong>
+                        File received
+                    </strong>
+
+                    <p>
+                        An external file reaches someone
+                        in your organization.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <span class="business-analyze-explainer__arrow">
+                →
+            </span>
+
+
+            <div>
+
+                <span class="business-analyze-step">
+                    2
+                </span>
+
+                <div>
+                    <strong>
+                        PreClear analyzes
+                    </strong>
+
+                    <p>
+                        The file is evaluated before
+                        trust is granted.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <span class="business-analyze-explainer__arrow">
+                →
+            </span>
+
+
+            <div>
+
+                <span class="business-analyze-step">
+                    3
+                </span>
+
+                <div>
+                    <strong>
+                        Trust Decision
+                    </strong>
+
+                    <p>
+                        Your team receives a clear,
+                        actionable decision.
+                    </p>
+                </div>
+
+            </div>
+
+        </article>
+
+    </div>
+
+
+    <aside class="business-analyze-sidebar">
+
+        <article class="card business-analyze-side-card">
+
+            <p class="eyebrow">
+                Organization
+            </p>
+
+            <h2>
+                {{ current_organization.name }}
+            </h2>
+
+            <div class="business-analyze-org-details">
+
+                <div>
+                    <span>
+                        Protection
+                    </span>
+
+                    <strong class="business-dashboard-good">
+                        Active
+                    </strong>
+                </div>
+
+                <div>
+                    <span>
+                        Your role
+                    </span>
+
+                    <strong>
+                        {{ current_membership.role|title }}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>
+                        Plan
+                    </span>
+
+                    <strong>
+                        {% if current_organization.plan == "small_business" %}
+                            Small Business
+                        {% elif current_organization.plan == "enterprise" %}
+                            Enterprise
+                        {% else %}
+                            {{ current_organization.plan|replace("_", " ")|title }}
+                        {% endif %}
+                    </strong>
+                </div>
+
+            </div>
+
+        </article>
+
+
+        <article class="card business-analyze-side-card">
+
+            <p class="eyebrow">
+                Why context matters
+            </p>
+
+            <h2>
+                More than a file scan.
+            </h2>
+
+            <p>
+                PreClear records who analyzed the file,
+                where it was intended to be used, and
+                how it entered the organization.
+            </p>
+
+            <p>
+                That context becomes part of the
+                organizations evidence trail.
+            </p>
+
+        </article>
+
+
+        <article class="card business-analyze-side-card">
+
+            <p class="eyebrow">
+                Evidence
+            </p>
+
+            <h2>
+                Every decision is recorded.
+            </h2>
+
+            <ul class="business-analyze-evidence-list">
+
+                <li>
+                    File identity and hash
+                </li>
+
+                <li>
+                    Trust Decision
+                </li>
+
+                <li>
+                    Analysis timestamp
+                </li>
+
+                <li>
+                    User and environment
+                </li>
+
+                <li>
+                    File source
+                </li>
+
+            </ul>
+
+        </article>
+
+    </aside>
+
+</section>
+
+<div
+    id="business-analysis-overlay"
+    class="business-analysis-overlay"
+    hidden
+>
+    <div class="business-analysis-overlay__backdrop"></div>
+
+    <div
+        class="business-analysis-overlay__panel"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+    >
+        <div class="business-analysis-loading__graphic">
+            <div class="business-analysis-loading__shield">
+                <svg
+                    width="54"
+                    height="54"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                >
+                    <path
+                        d="M12 3 5 6v5c0 4.5 2.8 8.6 7 10 4.2-1.4 7-5.5 7-10V6l-7-3Z"
+                    />
+                </svg>
+
+                <span></span>
+            </div>
+        </div>
+
+        <p class="eyebrow">
+            PreClear analysis
+        </p>
+
+        <h2>
+            Analyzing your file…
+        </h2>
+
+        <p>
+            PreClear is reviewing the file and preparing
+            your organizations Trust Decision.
+        </p>
+
+        <div class="business-analysis-progress">
+            <span
+                id="analysis-progress-fill"
+                class="business-analysis-progress__fill"
+            ></span>
+        </div>
+
+        <ul class="business-analysis-loading__steps">
+            <li class="analysis-step">
+                <span class="business-analysis-step-indicator"></span>
+                Creating secure file fingerprint
+            </li>
+
+            <li class="analysis-step">
+                <span class="business-analysis-step-indicator"></span>
+                Inspecting file characteristics
+            </li>
+
+            <li class="analysis-step">
+                <span class="business-analysis-step-indicator"></span>
+                Evaluating trust indicators
+            </li>
+
+            <li class="analysis-step">
+                <span class="business-analysis-step-indicator"></span>
+                Recording organizational evidence
+            </li>
+
+            <li class="analysis-step">
+                <span class="business-analysis-step-indicator"></span>
+                Preparing Trust Decision
+            </li>
+        </ul>
+    </div>
+</div>
+
+<script>
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const form =
+            document.getElementById(
+                "business-analysis-form"
+            );
+
+        const input =
+            document.getElementById(
+                "business-file-input"
+            );
+
+        const uploadZone =
+            document.getElementById(
+                "business-upload-zone"
+            );
+
+        const uploadTitle =
+            document.getElementById(
+                "business-upload-title"
+            );
+
+        const filename =
+            document.getElementById(
+                "business-upload-filename"
+            );
+
+        const overlay =
+            document.getElementById(
+                "business-analysis-overlay"
+            );
+
+        const analyzeButton =
+            document.getElementById(
+                "business-analyze-button"
+            );
+
+        const progressFill =
+            document.getElementById(
+                "analysis-progress-fill"
+            );
+
+        const steps =
+            Array.from(
+                document.querySelectorAll(
+                    ".analysis-step"
+                )
+            );
+
+
+        function updateSelectedFile() {
+
+            if (
+                input.files &&
+                input.files.length > 0
+            ) {
+                uploadTitle.textContent =
+                    "File selected";
+
+                filename.textContent =
+                    input.files[0].name;
+
+                uploadZone.classList.add(
+                    "business-upload-zone--selected"
+                );
+
+            } else {
+                uploadTitle.textContent =
+                    "Choose a file to analyze";
+
+                filename.textContent =
+                    "Select a file or drag and drop it here.";
+
+                uploadZone.classList.remove(
+                    "business-upload-zone--selected"
+                );
+            }
+        }
+
+
+        input.addEventListener(
+            "change",
+            updateSelectedFile
+        );
+
+
+        uploadZone.addEventListener(
+            "dragover",
+            function (event) {
+                event.preventDefault();
+
+                uploadZone.classList.add(
+                    "business-upload-zone--dragging"
+                );
+            }
+        );
+
+
+        uploadZone.addEventListener(
+            "dragleave",
+            function () {
+                uploadZone.classList.remove(
+                    "business-upload-zone--dragging"
+                );
+            }
+        );
+
+
+        uploadZone.addEventListener(
+            "drop",
+            function (event) {
+                event.preventDefault();
+
+                uploadZone.classList.remove(
+                    "business-upload-zone--dragging"
+                );
+
+                const droppedFiles =
+                    event.dataTransfer.files;
+
+                if (
+                    !droppedFiles ||
+                    droppedFiles.length === 0
+                ) {
+                    return;
+                }
+
+                const dataTransfer =
+                    new DataTransfer();
+
+                dataTransfer.items.add(
+                    droppedFiles[0]
+                );
+
+                input.files =
+                    dataTransfer.files;
+
+                updateSelectedFile();
+            }
+        );
+
+
+        function resetSequence() {
+
+            progressFill.style.width =
+                "0%";
+
+            steps.forEach(
+                function (step) {
+                    step.classList.remove(
+                        "business-analysis-step--active",
+                        "business-analysis-step--complete"
+                    );
+                }
+            );
+        }
+
+
+        function runSequence() {
+
+            resetSequence();
+
+            const stepDuration = 850;
+
+            let index = 0;
+
+
+            function nextStep() {
+
+                if (index > 0) {
+
+                    steps[index - 1]
+                        .classList.remove(
+                            "business-analysis-step--active"
+                        );
+
+                    steps[index - 1]
+                        .classList.add(
+                            "business-analysis-step--complete"
+                        );
+                }
+
+
+                if (index >= steps.length) {
+
+                    progressFill.style.width =
+                        "100%";
+
+                    window.setTimeout(
+                        function () {
+                            form.submit();
+                        },
+                        700
+                    );
+
+                    return;
+                }
+
+
+                steps[index]
+                    .classList.add(
+                        "business-analysis-step--active"
+                    );
+
+
+                const percentage =
+                    ((index + 1) / steps.length)
+                    * 100;
+
+                progressFill.style.width =
+                    percentage + "%";
+
+
+                index += 1;
+
+
+                window.setTimeout(
+                    nextStep,
+                    stepDuration
+                );
+            }
+
+
+            nextStep();
+        }
+        
+
+
+        form.addEventListener(
+            "submit",
+            function (event) {
+
+                if (
+                    !input.files ||
+                    input.files.length === 0
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                analyzeButton.disabled = true;
+
+                overlay.hidden = false;
+
+                document.body.classList.add(
+                    "business-analysis-overlay-open"
+                );
+
+                window.requestAnimationFrame(
+                    function () {
+                        window.setTimeout(
+                            runSequence,
+                            250
+                        );
+                    }
+                );
+            }
+        );
+
+    }
+);
+</script>
+
+{% endblock %}

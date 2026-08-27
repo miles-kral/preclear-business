@@ -1,0 +1,624 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Reports | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Reports
+{% endblock %}
+
+{% block content %}
+
+
+<section class="business-reports-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Organizational reporting
+        </p>
+
+        <h1 class="page-title">
+            Security decisions, evidence, and activity.
+        </h1>
+
+        <p class="page-description">
+            Review your organization's PreClear activity,
+            Trust Decisions, evidence status, and operational
+            security posture.
+        </p>
+
+    </div>
+
+    <div class="business-reports-period">
+
+        <span>
+            Reporting period
+        </span>
+
+        <strong>
+            Last 30 days
+        </strong>
+
+    </div>
+
+</section>
+
+
+<section class="business-reports-summary">
+
+    <article class="card business-reports-stat">
+
+        <span>
+            Analyses
+        </span>
+
+        <strong>
+            {{ total_analyses }}
+        </strong>
+
+        <p>
+            Files evaluated during this reporting period.
+        </p>
+
+    </article>
+
+
+    <article class="card business-reports-stat">
+
+        <span>
+            Attention Required
+        </span>
+
+        <strong>
+            {{ caution_count + danger_count }}
+        </strong>
+
+        <p>
+            Caution and high-risk Trust Decisions.
+        </p>
+
+    </article>
+
+
+    <article class="card business-reports-stat">
+
+        <span>
+            Active Environments
+        </span>
+
+        <strong>
+            {{ active_environment_count }}
+        </strong>
+
+        <p>
+            Protected organizational environments.
+        </p>
+
+    </article>
+
+
+    <article class="card business-reports-stat">
+
+        <span>
+            Recorded Activity
+        </span>
+
+        <strong>
+            {{ recent_activity_count }}
+        </strong>
+
+        <p>
+            Auditable organizational events.
+        </p>
+
+    </article>
+
+</section>
+
+
+<section class="business-reports-grid">
+
+    <article class="card business-reports-panel">
+
+        <div class="business-reports-panel__header">
+
+            <div>
+
+                <p class="eyebrow">
+                    Trust Decisions
+                </p>
+
+                <h2>
+                    Decision Summary
+                </h2>
+
+            </div>
+
+            <strong class="business-reports-panel__total">
+                {{ total_analyses }}
+            </strong>
+
+        </div>
+
+
+        <div class="business-reports-distribution">
+
+            <div class="business-reports-distribution__bar">
+
+                {% if total_analyses > 0 %}
+
+                    <span
+                        class="business-reports-distribution__safe"
+                        data-width="{{ safe_pct }}"
+                    ></span>
+
+                    <span
+                        class="business-reports-distribution__caution"
+                        data-width="{{ caution_pct }}"
+                    ></span>
+
+                    <span
+                        class="business-reports-distribution__danger"
+                        data-width="{{ danger_pct }}"
+                    ></span>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="business-reports-breakdown">
+
+                <div>
+
+                    <span
+                        class="
+                            business-reports-dot
+                            business-reports-dot--safe
+                        "
+                    ></span>
+
+                    <div>
+                        <strong>
+                            {{ looks_safe_count }}
+                        </strong>
+
+                        <span>
+                            Looks Safe · {{ safe_pct }}%
+                        </span>
+                    </div>
+
+                </div>
+
+
+                <div>
+
+                    <span
+                        class="
+                            business-reports-dot
+                            business-reports-dot--caution
+                        "
+                    ></span>
+
+                    <div>
+                        <strong>
+                            {{ caution_count }}
+                        </strong>
+
+                        <span>
+                            Use Caution · {{ caution_pct }}%
+                        </span>
+                    </div>
+
+                </div>
+
+
+                <div>
+
+                    <span
+                        class="
+                            business-reports-dot
+                            business-reports-dot--danger
+                        "
+                    ></span>
+
+                    <div>
+                        <strong>
+                            {{ danger_count }}
+                        </strong>
+
+                        <span>
+                            Do Not Open · {{ danger_pct }}%
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </article>
+
+
+    <article class="card business-reports-panel">
+
+        <div class="business-reports-panel__header">
+
+            <div>
+
+                <p class="eyebrow">
+                    Evidence
+                </p>
+
+                <h2>
+                    Review Status
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="business-reports-evidence">
+
+            <a href="/ledger?review=open">
+
+                <span>
+                    Open
+                </span>
+
+                <strong>
+                    {{ open_evidence_count }}
+                </strong>
+
+            </a>
+
+
+            <a href="/ledger?review=reviewed">
+
+                <span>
+                    Reviewed
+                </span>
+
+                <strong>
+                    {{ reviewed_evidence_count }}
+                </strong>
+
+            </a>
+
+
+            <a href="/ledger?review=resolved">
+
+                <span>
+                    Resolved
+                </span>
+
+                <strong>
+                    {{ resolved_evidence_count }}
+                </strong>
+
+            </a>
+
+        </div>
+
+
+        <a
+            class="button button--outline button--full"
+            href="/ledger"
+        >
+            View Decision Ledger
+        </a>
+
+    </article>
+
+</section>
+
+<section
+    class="
+        card
+        business-reports-panel
+        business-reports-environment-panel
+    "
+>
+
+    <div class="business-reports-panel__header">
+
+        <div>
+
+            <p class="eyebrow">
+                Environments
+            </p>
+
+            <h2>
+                Environment Activity
+            </h2>
+
+        </div>
+
+        <span class="business-reports-panel__period">
+            Last 30 days
+        </span>
+
+    </div>
+
+
+    {% if environment_activity %}
+
+        <div class="business-reports-environments">
+
+            {% for item in environment_activity %}
+
+                <div class="business-reports-environment">
+
+                    <div class="business-reports-environment__identity">
+
+                        <strong>
+                            {{ item.environment.name }}
+                        </strong>
+
+                        <span>
+                            {% if item.environment.is_active %}
+                                Active
+                            {% else %}
+                                Inactive
+                            {% endif %}
+                        </span>
+
+                    </div>
+
+
+                    <div class="business-reports-environment__metrics">
+
+                        <div>
+
+                            <strong>
+                                {{ item.analysis_count }}
+                            </strong>
+
+                            <span>
+                                Analyses
+                            </span>
+
+                        </div>
+
+
+                        <div>
+
+                            <strong>
+                                {{ item.attention_count }}
+                            </strong>
+
+                            <span>
+                                Attention
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <p class="business-reports-empty">
+            No environments are available for this organization.
+        </p>
+
+    {% endif %}
+
+</section>
+
+<section class="business-reports-grid">
+
+    <article class="card business-reports-panel">
+
+        <div class="business-reports-panel__header">
+
+            <div>
+
+                <p class="eyebrow">
+                    Reporting
+                </p>
+
+                <h2>
+                    Standard Reports
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="business-reports-report-list">
+
+            <div>
+
+                <div>
+
+                    <strong>
+                        30-Day Security Summary
+                    </strong>
+
+                    <p>
+                        Executive summary of Trust Decisions,
+                        evidence status, activity, and
+                        environment-level security results.
+                    </p>
+
+                </div>
+
+                <a
+                    class="button button--primary"
+                    href="/reports/security-summary/pdf"
+                >
+                    Download PDF
+                </a>
+
+            </div>
+
+
+            <div>
+
+                <div>
+
+                    <strong>
+                        Decision Ledger
+                    </strong>
+
+                    <p>
+                        Complete Trust Decision and
+                        evidence history.
+                    </p>
+
+                </div>
+
+                <a
+                    class="button button--primary"
+                    href="/ledger/export/pdf"
+                >
+                    Download PDF
+                </a>
+
+            </div>
+
+
+            <div>
+
+                <div>
+
+                    <strong>
+                        Activity Log
+                    </strong>
+
+                    <p>
+                        Auditable organizational and
+                        administrative activity.
+                    </p>
+
+                </div>
+
+                <a
+                    class="button button--primary"
+                    href="/activity/export/pdf"
+                >
+                    Download PDF
+                </a>
+
+            </div>
+
+        </div>
+
+    </article>
+
+
+    <article class="card business-reports-panel">
+
+        <div class="business-reports-panel__header">
+
+            <div>
+
+                <p class="eyebrow">
+                    Plan capability
+                </p>
+
+                <h2>
+                    Advanced Reporting
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        {% if advanced_reporting %}
+
+            <div class="business-reports-feature">
+
+                <strong>
+                    Advanced reporting enabled
+                </strong>
+
+                <p>
+                    Your Enterprise plan includes
+                    expanded reporting capabilities,
+                    governance reporting, and extended
+                    evidence visibility.
+                </p>
+
+            </div>
+
+        {% else %}
+
+            <div
+                class="
+                    business-reports-feature
+                    business-reports-feature--locked
+                "
+            >
+
+                <strong>
+                    Available with Enterprise
+                </strong>
+
+                <p>
+                    Unlock custom reporting periods,
+                    governance reports, extended
+                    evidence reporting, and advanced
+                    organizational insights.
+                </p>
+
+                <a
+                    class="button button--primary button--full"
+                    href="/settings"
+                >
+                    View Enterprise
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </article>
+
+</section>
+
+<script>
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            const distributionBars =
+                document.querySelectorAll(
+                    ".business-reports-distribution__bar span"
+                );
+
+            distributionBars.forEach(
+                function (bar) {
+
+                    const width =
+                        Number(
+                            bar.dataset.width
+                        );
+
+                    if (
+                        Number.isFinite(width)
+                    ) {
+                        bar.style.width =
+                            width + "%";
+                    }
+
+                }
+            );
+
+        }
+    );
+</script>
+
+{% endblock %}

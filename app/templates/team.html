@@ -1,0 +1,558 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Team | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Team
+{% endblock %}
+
+{% block content %}
+
+<section class="business-team-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Organization access
+        </p>
+
+        <h1 class="page-title">
+            Team
+        </h1>
+
+        <p class="page-description">
+            Manage the people who can access
+            {{ current_organization.name }}.
+        </p>
+
+    </div>
+
+
+    {% if current_membership.role in ["owner", "admin"] %}
+
+        <form
+            class="business-team-invite-form"
+            method="post"
+            action="/team/invite"
+        >
+
+            <input
+                type="email"
+                name="email"
+                placeholder="team@company.com"
+                required
+            >
+
+            <select name="role">
+                <option value="viewer">
+                    Viewer
+                </option>
+
+                <option value="analyst">
+                    Analyst
+                </option>
+
+                <option value="admin">
+                    Admin
+                </option>
+            </select>
+
+            <button
+                class="button button--primary"
+                type="submit"
+            >
+            Invite Team Member
+            </button>
+
+        </form>
+
+    {% endif %}
+
+</section>
+
+{% if team_message %}
+
+    <div
+        class="
+            business-team-message
+
+            {% if team_message.type == 'error' %}
+                business-team-message--error
+            {% else %}
+                business-team-message--success
+            {% endif %}
+        "
+    >
+
+        <div class="business-team-message__icon">
+
+            {% if team_message.type == "error" %}
+
+                <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 8v5" />
+                    <path d="M12 17h.01" />
+                </svg>
+
+            {% else %}
+
+                <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="m8 12 2.5 2.5L16 9" />
+                </svg>
+
+            {% endif %}
+
+        </div>
+
+        <span>
+            {{ team_message.text }}
+        </span>
+
+    </div>
+
+{% endif %}
+
+
+<section class="card business-team-panel">
+
+    <div class="business-team-panel__header">
+
+        <div>
+            <h2>
+                Organization Members
+            </h2>
+
+            <p>
+                {{ memberships|length }}
+                active
+                {% if memberships|length == 1 %}
+                    member
+                {% else %}
+                    members
+                {% endif %}
+            </p>
+        </div>
+
+    </div>
+
+
+    <div class="business-team-table-wrap">
+
+        <table class="business-team-table">
+
+            <thead>
+                <tr>
+                    <th>
+                        Member
+                    </th>
+
+                    <th>
+                        Email
+                    </th>
+
+                    <th>
+                        Role
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                    <th>
+                        Actions
+                    </th>
+
+                    <th>
+                        Delivery
+                    </th>
+                </tr>
+            </thead>
+
+
+            <tbody>
+
+                {% for membership in memberships %}
+
+                    <tr>
+
+                        <td>
+
+                            <div class="business-team-member">
+
+                                <div class="business-team-avatar">
+                                    {{ membership.user.name[:1]|upper }}
+                                </div>
+
+                                <div>
+                                    <strong>
+                                        {{ membership.user.name }}
+                                    </strong>
+
+                                    {% if membership.user_id == current_user.id %}
+                                        <span>
+                                            You
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                            </div>
+
+                        </td>
+
+
+                        <td>
+                            {{ membership.user.email }}
+                        </td>
+
+
+                        <td>
+
+                            <span
+                                class="
+                                    business-team-role
+
+                                    {% if membership.role == 'owner' %}
+                                        business-team-role--owner
+                                    {% elif membership.role == 'admin' %}
+                                        business-team-role--admin
+                                    {% else %}
+                                        business-team-role--member
+                                    {% endif %}
+                                "
+                            >
+                                {{ membership.role|title }}
+                            </span>
+
+                        </td>
+
+
+                        <td>
+
+                            <span class="business-team-status">
+                                Active
+                            </span>
+
+                        </td>
+
+                        <td class="business-team-actions">
+
+                            {% if membership.role == "owner" %}
+
+                                <span class="business-team-owner-lock">
+                                    Owner
+                                </span>
+
+                            {% elif (
+                                current_membership.role == "owner"
+                                or (
+                                    current_membership.role == "admin"
+                                    and membership.role != "admin"
+                                )
+                            ) %}
+
+                                <form
+                                    class="business-team-role-form"
+                                    method="post"
+                                    action="/team/{{ membership.id }}/role"
+                                >
+
+                                    <select
+                                        name="role"
+                                        onchange="this.form.submit()"
+                                    >
+
+                                        <option
+                                            value="viewer"
+                                            {% if membership.role == "viewer" %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            Viewer
+                                        </option>
+
+                                        <option
+                                            value="analyst"
+                                            {% if membership.role == "analyst" %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            Analyst
+                                        </option>
+
+                                        {% if current_membership.role == "owner" %}
+
+                                            <option
+                                                value="admin"
+                                                {% if membership.role == "admin" %}
+                                                    selected
+                                                {% endif %}
+                                            >
+                                                Admin
+                                            </option>
+
+                                        {% endif %}
+
+                                    </select>
+
+                                </form>
+
+
+                                {% if membership.user_id != current_user.id %}
+
+                                    <form
+                                        method="post"
+                                        action="/team/{{ membership.id }}/remove"
+                                        onsubmit="
+                                            return confirm(
+                                                'Remove this user from the organization?'
+                                            );
+                                        "
+                                    >
+                                        <button
+                                            class="business-team-remove"
+                                            type="submit"
+                                        >
+                                            Remove Access
+                                        </button>
+                                    </form>
+
+                                {% endif %}
+
+                            {% else %}
+
+                                <span class="business-team-owner-lock">
+                                    —
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {% if pending_invitations %}
+
+        <div class="business-team-pending">
+
+            <div class="business-team-panel__header">
+
+                <div>
+                    <h2>
+                        Pending Invitations
+                    </h2>
+
+                    <p>
+                        Invitations awaiting acceptance.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="business-team-table-wrap">
+
+                <table class="business-team-table">
+
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Expires</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for invitation in pending_invitations %}
+
+                            <tr>
+
+                                <td>
+                                    {{ invitation.email }}
+                                </td>
+
+                                <td>
+                                    {{ invitation.role|title }}
+                                </td>
+
+                                <td>
+                                    <span class="business-team-pending-badge">
+                                        Pending
+                                    </span>
+                                </td>
+
+                                <td>
+                                    {{ invitation.expires_at }}
+                                </td>
+
+                                <td>
+
+                                    {% if invitation.delivery_status == "sent" %}
+
+                                        <span class="business-team-status">
+                                            Sent
+                                        </span>
+
+                                    {% elif invitation.delivery_status == "failed" %}
+
+                                        <span class="business-team-delivery-failed">
+                                            Failed
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="business-team-pending-badge">
+                                            Pending
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                                <td class="business-team-invite-action">
+
+                                    <button
+                                        class="text-link business-copy-invite"
+                                        type="button"
+                                        data-invite-path="/invite/{{ invitation.token }}"
+                                    >
+                                        Copy Invitation Link
+                                    </button>
+
+                                    <form
+                                        method="post"
+                                        action="/team/invitations/{{ invitation.id }}/resend"
+                                    >
+                                        <button
+                                            class="text-link"
+                                            type="submit"
+                                        >
+                                            Resend
+                                        </button>
+                                    </form>
+
+
+                                    <form
+                                        method="post"
+                                        action="/team/invitations/{{ invitation.id }}/cancel"
+                                        onsubmit="
+                                            return confirm(
+                                                'Cancel this invitation?'
+                                            );
+                                        "
+                                    >
+                                        <button
+                                            class="business-team-cancel-invite"
+                                            type="submit"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </form>
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+</section>
+
+<script>
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            const copyButtons =
+                document.querySelectorAll(
+                    ".business-copy-invite"
+                );
+
+            copyButtons.forEach(
+                function (button) {
+
+                    button.addEventListener(
+                        "click",
+                        async function () {
+
+                            const path =
+                                button.dataset.invitePath;
+
+                            const inviteUrl =
+                                window.location.origin
+                                + path;
+
+                            try {
+
+                                await navigator.clipboard.writeText(
+                                    inviteUrl
+                                );
+
+                                const originalText =
+                                    button.textContent;
+
+                                button.textContent =
+                                    "Copied ✓";
+
+                                window.setTimeout(
+                                    function () {
+                                        button.textContent =
+                                            originalText;
+                                    },
+                                    1800
+                                );
+
+                            } catch (error) {
+
+                                window.prompt(
+                                    "Copy this invitation link:",
+                                    inviteUrl
+                                );
+
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+        }
+    );
+</script>
+
+{% endblock %}

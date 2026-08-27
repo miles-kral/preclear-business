@@ -1,0 +1,489 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Trust Decision | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Trust Decision
+{% endblock %}
+
+{% block content %}
+
+<section class="business-analyze-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Analysis complete
+        </p>
+
+        <h1 class="page-title">
+            Trust Decision
+        </h1>
+
+        <p class="page-description">
+            PreClear completed the initial analysis
+            and recorded the result for your organization.
+        </p>
+
+    </div>
+
+</section>
+
+
+<article
+    class="
+        card
+        business-result-card
+
+        {% if analysis.decision == 'LOOKS_SAFE' %}
+            business-result-card--safe
+        {% elif analysis.decision == 'USE_CAUTION' %}
+            business-result-card--caution
+        {% else %}
+            business-result-card--danger
+        {% endif %}
+    "
+>
+
+    <div class="business-result-card__header">
+
+        <div>
+
+            <p class="business-result-file">
+                {{ analysis.filename }}
+            </p>
+
+            <p class="business-result-label">
+                PreClear Trust Decision
+            </p>
+
+            <h2>
+
+                {% if analysis.decision == "LOOKS_SAFE" %}
+                    Looks Safe
+                {% elif analysis.decision == "USE_CAUTION" %}
+                    Use Caution
+                {% else %}
+                    Do Not Open
+                {% endif %}
+
+            </h2>
+
+        </div>
+
+        <span
+            class="
+                business-result-risk
+
+                {% if analysis.risk_level == 'LOW' %}
+                    business-result-risk--safe
+                {% elif analysis.risk_level == 'MEDIUM' %}
+                    business-result-risk--caution
+                {% else %}
+                    business-result-risk--danger
+                {% endif %}
+            "
+        >
+            {{ analysis.risk_level|title }} Risk
+        </span>
+
+    </div>
+
+
+    <p class="business-result-explanation">
+        {{ analysis.explanation }}
+    </p>
+
+
+    <section class="business-result-section">
+
+        <div class="business-result-section__header">
+            <h3>
+                Why PreClear made this decision
+            </h3>
+
+            <p>
+                Security indicators that contributed
+                to this Trust Decision.
+            </p>
+        </div>
+
+        <ul class="business-result-reasons">
+
+            {% for reason in reasons %}
+
+                <li>
+                    <span class="business-result-reason-icon">
+                        ✓
+                    </span>
+
+                    <span>
+                        {{ reason }}
+                    </span>
+                </li>
+
+            {% endfor %}
+
+        </ul>
+
+    </section>
+
+    <section class="business-result-section">
+
+        <div class="business-result-section__header">
+
+            <h3>
+                Threat Intelligence
+            </h3>
+
+            <p>
+                External reputation intelligence associated
+                with this file fingerprint.
+            </p>
+
+        </div>
+
+
+        <div class="business-threat-intelligence">
+
+            <div class="business-threat-intelligence__header">
+
+                <div>
+
+                    <span>
+                        VirusTotal reputation
+                    </span>
+
+                    {% if analysis.virustotal_found is none %}
+
+                        <strong>
+                            Intelligence Unavailable
+                        </strong>
+
+                    {% elif analysis.virustotal_found %}
+
+                        {% if analysis.virustotal_malicious and analysis.virustotal_malicious > 0 %}
+
+                            <strong class="business-threat-intelligence__danger">
+                                Threat Detected
+                            </strong>
+
+                        {% elif analysis.virustotal_suspicious and analysis.virustotal_suspicious > 0 %}
+
+                            <strong class="business-threat-intelligence__warning">
+                                Suspicious Reputation
+                            </strong>
+
+                        {% else %}
+
+                            <strong class="business-threat-intelligence__safe">
+                                No Threat Detections
+                            </strong>
+
+                        {% endif %}
+
+                    {% else %}
+
+                        <strong>
+                            No Existing Reputation
+                        </strong>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            {% if analysis.virustotal_found %}
+
+                <div class="business-threat-intelligence__metrics">
+
+                    <div>
+
+                        <strong>
+                            {{ analysis.virustotal_malicious or 0 }}
+                        </strong>
+
+                        <span>
+                            Malicious
+                        </span>
+
+                    </div>
+
+
+                    <div>
+
+                        <strong>
+                            {{ analysis.virustotal_suspicious or 0 }}
+                        </strong>
+
+                        <span>
+                            Suspicious
+                        </span>
+
+                    </div>
+
+
+                    <div>
+
+                        <strong>
+                            {{ analysis.virustotal_undetected or 0 }}
+                        </strong>
+
+                        <span>
+                            Undetected
+                        </span>
+
+                    </div>
+
+
+                    <div>
+
+                        <strong>
+                            {{ analysis.virustotal_harmless or 0 }}
+                        </strong>
+
+                        <span>
+                            Harmless
+                        </span>
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+
+            <div class="business-threat-intelligence__message">
+
+                {% if analysis.virustotal_found is none %}
+
+                    <p>
+                        VirusTotal threat intelligence was not available
+                        when this analysis was performed. PreClear's Trust
+                        Decision was based on the other security indicators
+                        identified during analysis.
+                    </p>
+
+                {% elif analysis.virustotal_found %}
+
+                    {% if analysis.virustotal_malicious and analysis.virustotal_malicious > 0 %}
+
+                        <p>
+                            VirusTotal recognized this SHA-256 fingerprint
+                            and reported malicious detections from
+                            participating security engines.
+                        </p>
+
+                    {% elif analysis.virustotal_suspicious and analysis.virustotal_suspicious > 0 %}
+
+                        <p>
+                            VirusTotal recognized this SHA-256 fingerprint
+                            and reported suspicious detections that
+                            contributed to PreClear's Trust Decision.
+                        </p>
+
+                    {% else %}
+
+                        <p>
+                            VirusTotal recognized this file fingerprint
+                            and reported no malicious or suspicious
+                            detections in the latest available analysis.
+                        </p>
+
+                    {% endif %}
+
+                {% else %}
+
+                    <p>
+                        This SHA-256 fingerprint was not found in
+                        VirusTotal's available threat intelligence.
+                        PreClear's Trust Decision is based on the other
+                        security indicators identified during analysis.
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="business-result-section">
+
+        <div class="business-result-section__header">
+            <h3>
+                Analysis evidence
+            </h3>
+
+            <p>
+                Technical and business context recorded
+                with this decision.
+            </p>
+        </div>
+
+
+        <div class="business-result-details">
+
+            <div>
+                <span>
+                    File type
+                </span>
+
+                <strong>
+                    {{ analysis.extension or "Unknown" }}
+                </strong>
+            </div>
+
+            <div>
+                <span>
+                    MIME type
+                </span>
+
+                <strong>
+                    {{ analysis.mime_type }}
+                </strong>
+            </div>
+
+            <div>
+                <span>
+                    File size
+                </span>
+
+                <strong>
+                    {{ analysis.file_size }} bytes
+                </strong>
+            </div>
+
+            <div>
+                <span>
+                    Environment
+                </span>
+
+                <strong>
+                    {{ analysis.environment.name }}
+                </strong>
+            </div>
+
+            <div>
+                <span>
+                    Source
+                </span>
+
+                <strong>
+                    {{ analysis.source|replace("_", " ")|title }}
+                </strong>
+            </div>
+
+            <div>
+                <span>
+                    Analyzed by
+                </span>
+
+                <strong>
+                    {{ current_user.name }}
+                </strong>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="business-result-section">
+
+        <div class="business-result-section__header">
+            <h3>
+                Audit record
+            </h3>
+
+            <p>
+                This decision has been preserved
+                as organizational evidence.
+            </p>
+        </div>
+
+
+        <div class="business-result-audit">
+
+            <div>
+                <span>
+                    Analysis ID
+                </span>
+
+                <strong>
+                    PC-{{ analysis.id }}
+                </strong>
+            </div>
+
+            <div>
+                <span>
+                    Organization
+                </span>
+
+                <strong>
+                    {{ current_organization.name }}
+                </strong>
+            </div>
+
+            <div>
+                <span>
+                    Recorded
+                </span>
+
+                <strong>
+                    {{ analysis.created_at }}
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="business-result-hash">
+
+            <span>
+                SHA-256 fingerprint
+            </span>
+
+            <code>
+                {{ analysis.sha256 }}
+            </code>
+
+        </div>
+
+    </section>
+
+
+    <div class="business-result-actions">
+
+        <a
+            class="button button--outline"
+            href="/analyze"
+        >
+            Analyze Another File
+        </a>
+
+        <a
+            class="button button--outline"
+            href="/ledger/{{ analysis.id }}/pdf"
+        >
+            Download Evidence PDF
+        </a>
+
+        <a
+            class="button button--outline"
+            href="/ledger"
+        >
+            View Decision Ledger
+        </a>
+
+    </div>
+
+</article>
+
+{% endblock %}

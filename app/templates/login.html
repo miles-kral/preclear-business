@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}
+Log In | PreClear Business
+{% endblock %}
+
+{% block content %}
+
+<section class="auth-page">
+
+    <div class="auth-card">
+
+        <div class="auth-card__header">
+
+            <p class="eyebrow">
+                PreClear Business
+            </p>
+
+            <h1>
+                Welcome back
+            </h1>
+
+            <p>
+                Log in to your organization workspace.
+            </p>
+
+        </div>
+
+
+        {% if error %}
+            <div class="alert alert--danger">
+                {{ error }}
+            </div>
+        {% endif %}
+
+
+        <form
+            class="auth-form"
+            method="post"
+            action="/login"
+        >
+
+            <label>
+                Business email
+
+                <input
+                    type="email"
+                    name="email"
+                    autocomplete="email"
+                    required
+                >
+            </label>
+
+
+            <label>
+                Password
+
+                <input
+                    type="password"
+                    name="password"
+                    autocomplete="current-password"
+                    required
+                >
+            </label>
+
+
+            <button
+                class="button button--primary button--full"
+                type="submit"
+            >
+                Log In
+            </button>
+
+        </form>
+
+
+        <p class="auth-card__footer">
+            Need an account?
+            <a href="/pricing">
+                View Plans
+            </a>
+        </p>
+
+    </div>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,315 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Settings | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Settings
+{% endblock %}
+
+{% block content %}
+
+
+<section class="business-settings-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Organization settings
+        </p>
+
+        <h1 class="page-title">
+            Manage your PreClear Business account.
+        </h1>
+
+        <p class="page-description">
+            Review organization details, subscription status,
+            plan entitlements, and account information.
+        </p>
+
+    </div>
+
+</section>
+
+
+<section class="business-settings-grid">
+
+
+    <div class="business-settings-main">
+
+
+        <article class="card business-settings-panel">
+
+            <div class="business-settings-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Organization
+                    </p>
+
+                    <h2>
+                        Organization Details
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-settings-details">
+
+                <div>
+
+                    <span>
+                        Organization
+                    </span>
+
+                    <strong>
+                        {{ current_organization.name }}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Your role
+                    </span>
+
+                    <strong>
+                        {{ current_membership.role | title }}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Active team members
+                    </span>
+
+                    <strong>
+                        {{ active_team_members }}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Active environments
+                    </span>
+
+                    <strong>
+                        {{ active_environments }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </article>
+
+
+        <article class="card business-settings-panel">
+
+            <div class="business-settings-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Account
+                    </p>
+
+                    <h2>
+                        Account & Security
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-settings-details">
+
+                <div>
+
+                    <span>
+                        Name
+                    </span>
+
+                    <strong>
+                        {{ current_user.name }}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Email
+                    </span>
+
+                    <strong>
+                        {{ current_user.email }}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Account status
+                    </span>
+
+                    <strong class="business-dashboard-good">
+                        {% if current_user.is_active %}
+                            Active
+                        {% else %}
+                            Inactive
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </article>
+
+    </div>
+
+
+    <aside class="business-settings-side">
+
+
+        <article class="card business-settings-panel">
+
+            <div class="business-settings-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Subscription
+                    </p>
+
+                    <h2>
+                        {{ plan_config["name"] }}
+                    </h2>
+
+                </div>
+
+                <span
+                    class="
+                        status-badge
+                        {% if subscription_status == 'active' %}
+                            status-badge--success
+                        {% elif subscription_status == 'trialing' %}
+                            status-badge--neutral
+                        {% else %}
+                            status-badge--warning
+                        {% endif %}
+                        status-badge--small
+                    "
+                >
+                    {{ subscription_status_label }}
+                </span>
+
+            </div>
+
+
+            <div class="business-settings-plan">
+
+                <div>
+
+                    <span>
+                        Analyses
+                    </span>
+
+                    <strong>
+                        {% if plan_config["analysis_limit"] %}
+                            {{ plan_config["analysis_limit"] }}
+                            / month
+                        {% else %}
+                            Custom
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Team members
+                    </span>
+
+                    <strong>
+                        {% if plan_config["team_member_limit"] %}
+                            {{ plan_config["team_member_limit"] }}
+                        {% else %}
+                            Custom
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Environments
+                    </span>
+
+                    <strong>
+                        {% if plan_config["environment_limit"] %}
+                            {{ plan_config["environment_limit"] }}
+                        {% else %}
+                            Custom
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Evidence retention
+                    </span>
+
+                    <strong>
+                        {% if plan_config["evidence_retention_months"] %}
+                            {{ plan_config["evidence_retention_months"] }}
+                            months
+                        {% else %}
+                            Custom
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <a
+                class="button button--primary button--full"
+                href="/settings/subscription"
+            >
+                Manage Subscription
+            </a>
+
+        </article>
+
+    </aside>
+
+</section>
+
+
+{% endblock %}

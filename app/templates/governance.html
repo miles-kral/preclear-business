@@ -1,0 +1,635 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Governance | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Governance
+{% endblock %}
+
+{% block content %}
+
+
+<section class="business-governance-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Governance & evidence
+        </p>
+
+        <h1 class="page-title">
+            Turn every Trust Decision into accountable evidence.
+        </h1>
+
+        <p class="page-description">
+            Monitor evidence review, organizational controls,
+            and governance activity across
+            {{ current_organization.name }}.
+        </p>
+
+    </div>
+
+    <a
+        class="button button--primary"
+        href="/ledger"
+    >
+        View Decision Ledger
+    </a>
+
+</section>
+
+
+<section class="business-governance-summary">
+
+    <a
+        class="card business-governance-stat"
+        href="/ledger?review=open"
+    >
+        <p class="business-governance-stat__label">
+            Open Evidence
+        </p>
+
+        <strong class="business-governance-stat__value">
+            {{ open_evidence_count }}
+        </strong>
+
+        <span>
+            Awaiting review
+        </span>
+    </a>
+
+
+    <a
+        class="card business-governance-stat"
+        href="/ledger?review=reviewed"
+    >
+        <p class="business-governance-stat__label">
+            Reviewed
+        </p>
+
+        <strong class="business-governance-stat__value">
+            {{ reviewed_evidence_count }}
+        </strong>
+
+        <span>
+            Reviewed decisions
+        </span>
+    </a>
+
+
+    <a
+        class="card business-governance-stat"
+        href="/ledger?review=resolved"
+    >
+        <p class="business-governance-stat__label">
+            Resolved
+        </p>
+
+        <strong class="business-governance-stat__value">
+            {{ resolved_evidence_count }}
+        </strong>
+
+        <span>
+            Completed reviews
+        </span>
+    </a>
+
+
+    <article class="card business-governance-stat">
+
+        <p class="business-governance-stat__label">
+            Evidence Retention
+        </p>
+
+        <strong class="business-governance-stat__value">
+
+            {% if retention_months %}
+                {{ retention_months }}
+            {% else %}
+                Unlimited
+            {% endif %}
+
+        </strong>
+
+        <span>
+
+            {% if retention_months %}
+                months
+            {% else %}
+                retention
+            {% endif %}
+
+        </span>
+
+    </article>
+
+</section>
+
+<section class="card business-governance-posture">
+
+    <div class="business-governance-posture__status">
+
+        <div
+            class="
+                business-governance-posture__indicator
+                business-governance-posture__indicator--{{ governance_posture.key }}
+            "
+        >
+        </div>
+
+        <div>
+
+            <p class="eyebrow">
+                Governance posture
+            </p>
+
+            <h2>
+                {{ governance_posture.label }}
+            </h2>
+
+            <p>
+                {{ governance_posture.description }}
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="business-governance-posture__metrics">
+
+        <div>
+
+            <span>
+                Unresolved Evidence
+            </span>
+
+            <strong>
+                {{ unresolved_evidence_count }}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Oldest Unresolved
+            </span>
+
+            <strong>
+
+                {% if oldest_unresolved_days is not none %}
+
+                    {% if oldest_unresolved_days == 0 %}
+                        Today
+                    {% elif oldest_unresolved_days == 1 %}
+                        1 day
+                    {% else %}
+                        {{ oldest_unresolved_days }} days
+                    {% endif %}
+
+                {% else %}
+                    None
+                {% endif %}
+
+            </strong>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<section class="business-governance-grid">
+
+    <div class="business-governance-main">
+
+
+        <article class="card business-governance-panel">
+
+            <div class="business-governance-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Review health
+                    </p>
+
+                    <h2>
+                        Evidence Requiring Attention
+                    </h2>
+
+                </div>
+
+                <a href="/ledger">
+                    Open Ledger
+                </a>
+
+            </div>
+
+
+            <div class="business-governance-attention">
+
+                <a
+                    class="business-governance-attention__item"
+                    href="/ledger?decision=DO_NOT_OPEN&review=unresolved"
+                >
+
+                    <div>
+
+                        <strong>
+                            {{ high_risk_open_count }}
+                        </strong>
+
+                        <span>
+                            High-risk decisions
+                        </span>
+
+                    </div>
+
+                    <p>
+                        Unresolved Do Not Open decisions
+                        requiring governance review.
+                    </p>
+
+                </a>
+
+
+                <a
+                    class="business-governance-attention__item"
+                    href="/ledger?decision=USE_CAUTION&review=unresolved"
+                >
+
+                    <div>
+
+                        <strong>
+                            {{ caution_open_count }}
+                        </strong>
+
+                        <span>
+                            Caution decisions
+                        </span>
+
+                    </div>
+
+                    <p>
+                        Unresolved Use Caution decisions
+                        requiring additional review.
+                    </p>
+
+                </a>
+
+            </div>
+
+        </article>
+
+
+        <article class="card business-governance-panel">
+
+            <div class="business-governance-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Audit trail
+                    </p>
+
+                    <h2>
+                        Recent Governance Activity
+                    </h2>
+
+                </div>
+
+                <a  
+                    class="button button--outline button--small"
+                    href="/activity"
+                >
+                    View Activity
+                </a>
+
+            </div>
+
+
+            <div class="business-governance-activity">
+
+                {% if recent_governance_activity %}
+
+                    {% for item in recent_governance_activity %}
+
+                        <div class="business-governance-activity__item">
+
+                            <div class="business-governance-activity__marker">
+                            </div>
+
+                            <div>
+
+                                <strong>
+                                    {{ item.event.description }}
+                                </strong>
+
+                                <span>
+                                    {{ item.display_time }}
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <div class="business-governance-empty">
+
+                        <strong>
+                            No governance activity yet.
+                        </strong>
+
+                        <p>
+                            Review actions, environment changes,
+                            and administrative events will appear here.
+                        </p>
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </article>
+
+    </div>
+
+
+    <aside class="business-governance-side">
+
+
+        <article class="card business-governance-panel">
+
+            <div class="business-governance-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Controls
+                    </p>
+
+                    <h2>
+                        Control Status
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-governance-controls">
+
+                <div>
+
+                    <span>
+                        Audit logging
+                    </span>
+
+                    <strong class="business-dashboard-good">
+                        Active
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Evidence retention
+                    </span>
+
+                    <strong>
+                        {% if retention_months %}
+                            {{ retention_months }} Months
+                        {% else %}
+                            Unlimited
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Role-based access
+                    </span>
+
+                    <strong class="business-dashboard-good">
+                        Active
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Active environments
+                    </span>
+
+                    <strong>
+                        {{ active_environment_count }}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Active team members
+                    </span>
+
+                    <strong>
+                        {{ active_team_member_count }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </article>
+
+
+        <article class="card business-governance-panel">
+
+            <div class="business-governance-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Governance policy
+                    </p>
+
+                    <h2>
+                        Evidence Review Policy
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-governance-controls">
+
+                <div>
+
+                    <span>
+                        High-risk review
+                    </span>
+
+                    <strong>
+                        {% if governance_policy.high_risk_review_required %}
+                            Required
+                        {% else %}
+                            Optional
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Caution review
+                    </span>
+
+                    <strong>
+                        {% if governance_policy.caution_review_required %}
+                            Required
+                        {% else %}
+                            Optional
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Review deadline
+                    </span>
+
+                    <strong>
+                        {{ governance_policy.review_deadline_days }} days
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Resolution note
+                    </span>
+
+                    <strong>
+                        {% if governance_policy.resolution_note_required %}
+                            Required
+                        {% else %}
+                            Optional
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+            </div>
+
+            <div class="business-governance-policy-status">
+
+                {% if overdue_review_count > 0 %}
+
+                    <a
+                        class="business-governance-policy-status__link"
+                        href="/ledger?review=overdue"
+                    >
+                        {{ overdue_review_count }}
+                        {% if overdue_review_count == 1 %}
+                            policy exception
+                        {% else %}
+                            policy exceptions
+                        {% endif %}
+                    </a>
+
+                    <p>
+                        Evidence has exceeded the
+                        {{ governance_policy.review_deadline_days }}-day
+                        review deadline.
+                    </p>
+
+                {% else %}
+
+                    <strong class="business-governance-policy-status--good">
+                        Policy requirements met
+                    </strong>
+
+                    <p>
+                        No unresolved evidence has exceeded
+                        the current review deadline.
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+            {% if advanced_governance %}
+
+                <a
+                    class="button button--outline button--full"
+                    href="/governance/policy"
+                    style="margin-top: 20px;"
+                >
+                    Manage Policy
+                </a>
+
+            {% else %}
+
+                <div
+                    class="
+                        business-governance-feature
+                        business-governance-feature--locked
+                    "
+                    style="margin-top: 20px;"
+                >
+
+                    <strong>
+                        Standard governance policy
+                    </strong>
+
+                    <p>
+                        Custom governance policies are
+                        available with Enterprise.
+                    </p>
+
+                    <a
+                        class="button button--outline button--full"
+                        href="/settings"
+                    >
+                        View Enterprise
+                    </a>
+
+                </div>
+
+            {% endif %}
+
+        </article>
+
+    </aside>
+
+</section>
+
+
+{% endblock %}

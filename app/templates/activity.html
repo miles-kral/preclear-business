@@ -1,0 +1,341 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Activity Log | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Activity Log
+{% endblock %}
+
+{% block content %}
+
+<section class="business-activity-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Organizational history
+        </p>
+
+        <h1 class="page-title">
+            Activity Log
+        </h1>
+
+        <p class="page-description">
+            Review security, governance, and
+            administrative activity across your organization.
+        </p>
+
+    </div>
+
+</section>
+
+<form
+    method="get"
+    action="/activity"
+    class="business-activity-filters"
+>
+
+    <div class="business-activity-filter">
+
+        <label for="activity_type">
+            Activity Type
+        </label>
+
+        <select
+            id="activity_type"
+            name="activity_type"
+        >
+
+            <option
+                value=""
+                {% if not selected_activity_type %}
+                    selected
+                {% endif %}
+            >
+                All Activity
+            </option>
+
+            <option
+                value="security"
+                {% if selected_activity_type == "security" %}
+                    selected
+                {% endif %}
+            >
+                Security
+            </option>
+
+            <option
+                value="team"
+                {% if selected_activity_type == "team" %}
+                    selected
+                {% endif %}
+            >
+                Team
+            </option>
+
+            <option
+                value="environment"
+                {% if selected_activity_type == "environment" %}
+                    selected
+                {% endif %}
+            >
+                Environments
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <div class="business-activity-filter">
+
+        <label for="user_id">
+            Team Member
+        </label>
+
+        <select
+            id="user_id"
+            name="user_id"
+        >
+
+            <option value="">
+                All Members
+            </option>
+
+            {% for user in organization_users %}
+
+                <option
+                    value="{{ user.id }}"
+                    {% if selected_user_id == user.id|string %}
+                        selected
+                    {% endif %}
+                >
+                    {{ user.name }}
+                </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+
+    <div class="business-activity-filter">
+
+        <label for="date_range">
+            Date
+        </label>
+
+        <select
+            id="date_range"
+            name="date_range"
+        >
+
+            <option
+                value=""
+                {% if not selected_date_range %}
+                    selected
+                {% endif %}
+            >
+                All Time
+            </option>
+
+            <option
+                value="7"
+                {% if selected_date_range == "7" %}
+                    selected
+                {% endif %}
+            >
+                Last 7 Days
+            </option>
+
+            <option
+                value="30"
+                {% if selected_date_range == "30" %}
+                    selected
+                {% endif %}
+            >
+                Last 30 Days
+            </option>
+
+            <option
+                value="90"
+                {% if selected_date_range == "90" %}
+                    selected
+                {% endif %}
+            >
+                Last 90 Days
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <div class="business-activity-filter-actions">
+
+        <button
+            type="submit"
+            class="button button--primary"
+        >
+            Apply Filters
+        </button>
+
+        <a
+            href="/activity"
+            class="button button--secondary"
+        >
+            Clear
+        </a>
+
+    </div>
+
+
+    <div class="business-activity-export">
+        <a
+            class="button button--primary"
+            href="/activity/export/pdf?activity_type={{ selected_activity_type }}&user_id={{ selected_user_id }}&date_range={{ selected_date_range }}"
+        >
+            Download PDF
+        </a>
+    </div>
+
+</form>
+
+
+<section class="card business-activity-panel">
+
+    <div class="business-activity-panel__header">
+
+        <div>
+            <h2>
+                Recent Activity
+            </h2>
+
+            <p>
+                {{ events|length }}
+                recorded
+                {% if events|length == 1 %}
+                    event
+                {% else %}
+                    events
+                {% endif %}
+            </p>
+        </div>
+
+    </div>
+
+
+    {% if events %}
+
+        <div class="business-activity-list">
+
+            {% for event in events %}
+
+                <div class="business-activity-row">
+
+                    <div class="business-activity-icon">
+
+                        {% if event.event_type == "file_analysis" %}
+
+                            <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="M12 3 5 6v5c0 4.5 2.8 8.6 7 10 4.2-1.4 7-5.5 7-10V6l-7-3Z" />
+                            </svg>
+
+                        {% elif event.event_type in ["evidence_reviewed", "evidence_resolved"] %}
+
+                            <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="M5 4h14v16H5z" />
+                                <path d="m8 12 2 2 5-5" />
+                            </svg>
+
+                        {% else %}
+
+                            <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 8v4" />
+                                <path d="M12 16h.01" />
+                            </svg>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="business-activity-row__body">
+
+                        <div>
+
+                            <strong>
+                                {{ event.description }}
+                            </strong>
+
+                            <span>
+                                {{
+                                    event.user.name
+                                    if event.user
+                                    else "System"
+                                }}
+                            </span>
+
+                        </div>
+
+
+                        <div class="business-activity-row__meta">
+
+                            <span class="business-activity-type">
+                                {{
+                                    event.event_type
+                                    | replace("_", " ")
+                                    | title
+                                }}
+                            </span>
+
+                            <span>
+                                {{ event.created_at }}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <div class="business-activity-empty">
+            No organizational activity has been recorded yet.
+        </div>
+
+    {% endif %}
+
+</section>
+
+{% endblock %}

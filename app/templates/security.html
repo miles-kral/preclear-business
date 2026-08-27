@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}
+Security | PreClear Business
+{% endblock %}
+
+
+{% block content %}
+
+<section class="public-page">
+
+    <div class="public-page__container">
+
+
+        <header class="public-page__hero">
+
+            <span class="public-page__eyebrow">
+                SECURITY
+            </span>
+
+            <h1>
+                Security is part of the architecture.
+            </h1>
+
+            <p class="public-page__lead">
+                PreClear Business is designed around a simple
+                principle: security decisions should happen
+                before risk is allowed to spread through the
+                organization.
+            </p>
+
+        </header>
+
+
+        <section class="public-page__section">
+
+            <h2>
+                Security at PreClear
+            </h2>
+
+            <p>
+                PreClear is building security infrastructure
+                around proactive trust decisions, controlled
+                access, organizational accountability, and
+                auditable evidence.
+            </p>
+
+            <p>
+                Our approach is designed to help organizations
+                evaluate potential risk earlier while preserving
+                a record of the decisions and actions surrounding
+                that risk.
+            </p>
+
+        </section>
+
+
+        <section class="public-page__section">
+
+            <h2>
+                Pre-ingress by design
+            </h2>
+
+            <p>
+                Traditional security controls often respond after
+                potentially dangerous content has already entered
+                an environment. PreClear is designed to move the
+                trust decision earlier.
+            </p>
+
+            <p>
+                Files and other supported inputs can be evaluated
+                before normal organizational use, producing a
+                risk assessment and Trust Decision that helps
+                determine how the content should be handled.
+            </p>
+
+        </section>
+
+
+        <section class="public-page__section">
+
+            <h2>
+                Organizational isolation
+            </h2>
+
+            <p>
+                PreClear Business organizes application data
+                around individual organizations. Access to
+                analyses, environments, governance records,
+                reporting, team information, and other protected
+                resources is scoped to the organization associated
+                with the authenticated user.
+            </p>
+
+            <p>
+                This organization-aware architecture helps prevent
+                users from accessing resources belonging to another
+                PreClear organization.
+            </p>
+
+        </section>
+
+
+        <section class="public-page__section">
+
+            <h2>
+                Account and access controls
+            </h2>
+
+            <p>
+                Access to protected PreClear Business features
+                requires an authenticated, active account and an
+                active organizational membership.
+            </p>
+
+            <p>
+                Role-based permissions distinguish between
+                organizational responsibilities such as Owner,
+                Administrator, Analyst, and Viewer. Sensitive
+                administrative actions are restricted according
+                to those roles.
+            </p>
+
+        </section>
+
+
+        <section class="public-page__section">
+
+            <h2>
+                Auditability and governance
+            </h2>
+
+            <p>
+                Security decisions are more useful when an
+                organization can understand what happened,
+                who acted, and how an issue was resolved.
+            </p>
+
+            <p>
+                PreClear Business records important organizational
+                activity through audit events and maintains
+                evidence associated with analysis and governance
+                workflows. These records support the Trust Ledger,
+                reporting, and organizational oversight features
+                within the platform.
+            </p>
+
+        </section>
+
+
+        <section class="public-page__section">
+
+            <h2>
+                Team administration
+            </h2>
+
+            <p>
+                Organization Owners and authorized Administrators
+                can manage team access, invitations, and supported
+                user roles. Administrative actions such as role
+                changes and access removal are governed by
+                application permissions and recorded as
+                organizational activity.
+            </p>
+
+        </section>
+
+
+        <section class="public-page__section">
+
+            <h2>
+                Billing security
+            </h2>
+
+            <p>
+                PreClear Business uses Stripe for subscription
+                checkout and billing management.
+            </p>
+
+            <p>
+                Subscription events received by PreClear through
+                Stripe webhooks are validated using Stripe's
+                webhook signature verification before they are
+                processed by the application.
+            </p>
+
+        </section>
+
+
+        <section class="public-page__section">
+
+            <h2>
+                A security program that continues to mature
+            </h2>
+
+            <p>
+                Security is an ongoing engineering responsibility,
+                not a one-time feature or certification.
+            </p>
+
+            <p>
+                As PreClear grows, we intend to continue
+                strengthening the technical, operational, and
+                governance controls surrounding the platform and
+                to expand our security program alongside the needs
+                of the organizations we serve.
+            </p>
+
+        </section>
+
+
+        <section class="public-page__section">
+
+            <h2>
+                Security questions
+            </h2>
+
+            <p>
+                Organizations evaluating PreClear may have
+                additional security, architecture, procurement,
+                or governance requirements.
+            </p>
+
+            <p>
+                Contact us and we will work with your team to
+                address questions about the platform and its
+                security model.
+            </p>
+
+            <div class="public-page__actions">
+
+                <a
+                    href="/contact"
+                    class="button button--primary"
+                >
+                    Contact PreClear
+                </a>
+
+            </div>
+
+        </section>
+
+
+    </div>
+
+</section>
+
+{% endblock %}
