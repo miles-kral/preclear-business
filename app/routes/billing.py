@@ -342,11 +342,117 @@ def purchase_complete_page(
         .first()
     )
 
+    if pending_purchase is None:
+        return RedirectResponse(
+            url="/pricing",
+            status_code=303,
+        )
+
     if (
-        pending_purchase is None
-        or pending_purchase.status
-        != "paid"
+        pending_purchase.status == "pending"
+        and session_id
     ):
+        if (
+            pending_purchase
+            .stripe_checkout_session_id
+            != session_id
+        ):
+            return RedirectResponse(
+                url="/pricing",
+                status_code=303,
+            )
+
+        try:
+            checkout_session = (
+                stripe.checkout.Session.retrieve(
+                    session_id
+                )
+            )
+
+        except stripe.StripeError:
+            return RedirectResponse(
+                url="/pricing",
+                status_code=303,
+            )
+
+        metadata = checkout_session.get(
+            "metadata",
+            {},
+        )
+
+        session_purchase_token = (
+            metadata.get(
+                "purchase_token"
+            )
+        )
+
+        if (
+            checkout_session.get("status")
+            != "complete"
+            or session_purchase_token
+            != purchase_token
+        ):
+            return RedirectResponse(
+                url="/pricing",
+                status_code=303,
+            )
+
+        subscription_id = (
+            checkout_session.get(
+                "subscription"
+            )
+        )
+
+        customer_id = (
+            checkout_session.get(
+                "customer"
+            )
+        )
+
+        customer_details = (
+            checkout_session.get(
+                "customer_details",
+                {},
+            )
+            or {}
+        )
+
+        customer_email = (
+            customer_details.get(
+                "email"
+            )
+        )
+
+        if (
+            not subscription_id
+            or not customer_id
+        ):
+            return RedirectResponse(
+                url="/pricing",
+                status_code=303,
+            )
+
+        pending_purchase.status = "paid"
+
+        pending_purchase.stripe_customer_id = (
+            customer_id
+        )
+
+        pending_purchase.stripe_subscription_id = (
+            subscription_id
+        )
+
+        pending_purchase.customer_email = (
+            customer_email
+        )
+
+        pending_purchase.completed_at = (
+            datetime.now(timezone.utc)
+        )
+
+        db.commit()
+
+    if pending_purchase.status != "paid":
         return RedirectResponse(
             url="/pricing",
             status_code=303,
