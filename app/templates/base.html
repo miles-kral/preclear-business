@@ -154,45 +154,61 @@
                 </span>
             </a>
 
-
-            <nav
-                class="business-header__nav"
-                aria-label="Main navigation"
+            <button
+                class="business-mobile-nav-toggle"
+                type="button"
+                aria-label="Open navigation"
+                aria-expanded="false"
+                aria-controls="business-mobile-menu"
             >
-                <a href="/#how">
-                    How It Works
-                </a>
-
-                <a href="/#governance">
-                    Governance
-                </a>
-
-                <a href="/pricing">
-                    Pricing
-                </a>
-
-                <a href="/contact">
-                    Contact Us
-                </a>
-            </nav>
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
 
 
-            <div class="business-header__actions">
-
-                <a
-                    class="business-header__login"
-                    href="/login"
+            <div
+                class="business-mobile-menu"
+                id="business-mobile-menu"
+            >
+                <nav
+                    class="business-header__nav"
+                    aria-label="Main navigation"
                 >
-                    Log In
-                </a>
+                    <a href="/#how">
+                        How It Works
+                    </a>
 
-                <a
-                    class="button button--primary"
-                    href="/pricing"
-                >
-                    Start Small Business
-                </a>
+                    <a href="/#governance">
+                        Governance
+                    </a>
 
+                    <a href="/pricing">
+                        Pricing
+                    </a>
+
+                    <a href="/contact">
+                        Contact Us
+                    </a>
+                </nav>
+
+                <div class="business-header__actions">
+
+                    <a
+                        class="business-header__login"
+                        href="/login"
+                    >
+                        Log In
+                    </a>
+
+                    <a
+                        class="button button--primary"
+                        href="/pricing"
+                    >
+                        Start Small Business
+                    </a>
+
+                </div>
             </div>
 
         </div>
@@ -303,6 +319,91 @@
         </div>
 
     </footer>
+
+<script>
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const toggle =
+            document.querySelector(
+                ".business-mobile-nav-toggle"
+            );
+
+        const menu =
+            document.querySelector(
+                ".business-mobile-menu"
+            );
+
+        if (
+            toggle
+            && menu
+        ) {
+
+            toggle.addEventListener(
+                "click",
+                function () {
+
+                    const isOpen =
+                        menu.classList.toggle(
+                            "business-mobile-menu--open"
+                        );
+
+                    toggle.setAttribute(
+                        "aria-expanded",
+                        String(isOpen)
+                    );
+                }
+            );
+
+
+            menu
+                .querySelectorAll("a")
+                .forEach(
+                    function (link) {
+
+                        link.addEventListener(
+                            "click",
+                            function () {
+
+                                menu.classList.remove(
+                                    "business-mobile-menu--open"
+                                );
+
+                                toggle.setAttribute(
+                                    "aria-expanded",
+                                    "false"
+                                );
+                            }
+                        );
+                    }
+                );
+
+
+            window.addEventListener(
+                "resize",
+                function () {
+
+                    if (
+                        window.innerWidth > 1180
+                    ) {
+
+                        menu.classList.remove(
+                            "business-mobile-menu--open"
+                        );
+
+                        toggle.setAttribute(
+                            "aria-expanded",
+                            "false"
+                        );
+                    }
+                }
+            );
+        }
+
+    }
+);
+</script>
 
 </body>
 </html>
