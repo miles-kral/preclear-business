@@ -38,6 +38,7 @@ from app.models import (
     Organization,
     PendingPurchase,
     User,
+    EvaluationInvitation,
 )
 
 
@@ -80,6 +81,43 @@ PRICE_TO_PLAN = {
         "enterprise"
     ),
 }
+
+def mark_evaluation_converted(
+    db: Session,
+    organization: Organization,
+) -> None:
+    if organization.subscription_status not in {
+        "active",
+        "trialing",
+    }:
+        return
+
+    evaluation = (
+        db.query(EvaluationInvitation)
+        .filter(
+            EvaluationInvitation.organization_id
+            == organization.id,
+            EvaluationInvitation.status.in_(
+                {
+                    "accepted",
+                    "expired",
+                    "revoked",
+                }
+            ),
+        )
+        .order_by(
+            EvaluationInvitation.id.desc()
+        )
+        .first()
+    )
+
+    if evaluation is None:
+        return
+
+    evaluation.status = "converted"
+
+    db.add(evaluation)
+    db.commit()
 
 def sync_subscription_to_organization(
     db: Session,
@@ -222,6 +260,11 @@ def sync_subscription_to_organization(
     db.commit()
     db.refresh(
         organization
+    )
+
+    mark_evaluation_converted(
+        db,
+        organization,
     )
 
     return organization

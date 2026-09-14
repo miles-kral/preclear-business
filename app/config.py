@@ -101,3 +101,12 @@ STRIPE_BUSINESS_PORTAL_CONFIGURATION_ID = os.getenv(
     "STRIPE_BUSINESS_PORTAL_CONFIGURATION_ID",
     "",
 )
+
+PLATFORM_ADMIN_EMAILS = {
+    email.strip().lower()
+    for email in os.getenv(
+        "PLATFORM_ADMIN_EMAILS",
+        "",
+    ).split(",")
+    if email.strip()
+}

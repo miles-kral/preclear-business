@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from fastapi.responses import RedirectResponse
 
+from app.config import PLATFORM_ADMIN_EMAILS
 from app.database import get_db
 from app.models import Membership, Organization, User
 
@@ -23,6 +24,16 @@ def get_current_user(
         user_id,
     )
 
+def is_platform_admin(
+    user: User | None,
+) -> bool:
+    if user is None:
+        return False
+
+    return (
+        user.email.strip().lower()
+        in PLATFORM_ADMIN_EMAILS
+    )
 
 def get_current_organization(
     request: Request,

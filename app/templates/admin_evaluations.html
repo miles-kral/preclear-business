@@ -1,0 +1,660 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Prospect Evaluations | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Prospect Evaluations
+{% endblock %}
+
+{% block content %}
+
+<div class="evaluation-admin">
+
+
+    <!-- =====================================================
+         PAGE HEADER
+    ====================================================== -->
+
+    <section class="evaluation-page-header">
+
+        <div>
+
+            <p class="eyebrow">
+                Platform Administration
+            </p>
+
+            <h1 class="page-title">
+                Prospect Evaluations
+            </h1>
+
+            <p class="page-description">
+                Create temporary PreClear Business access,
+                manage active evaluations, and track prospects
+                through conversion.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         SUMMARY
+    ====================================================== -->
+
+    <section class="evaluation-summary-grid">
+
+        <article class="evaluation-summary-card">
+
+            <span class="evaluation-summary-card__label">
+                Pending
+            </span>
+
+            <strong class="evaluation-summary-card__value">
+                {{ summary.pending }}
+            </strong>
+
+            <span class="evaluation-summary-card__description">
+                Invitations awaiting acceptance
+            </span>
+
+        </article>
+
+
+        <article class="evaluation-summary-card">
+
+            <span class="evaluation-summary-card__label">
+                Active
+            </span>
+
+            <strong class="evaluation-summary-card__value">
+                {{ summary.active }}
+            </strong>
+
+            <span class="evaluation-summary-card__description">
+                Evaluations currently in progress
+            </span>
+
+        </article>
+
+
+        <article class="evaluation-summary-card">
+
+            <span class="evaluation-summary-card__label">
+                Expired
+            </span>
+
+            <strong class="evaluation-summary-card__value">
+                {{ summary.expired }}
+            </strong>
+
+            <span class="evaluation-summary-card__description">
+                Evaluation periods completed
+            </span>
+
+        </article>
+
+
+        <article class="evaluation-summary-card">
+
+            <span class="evaluation-summary-card__label">
+                Converted
+            </span>
+
+            <strong class="evaluation-summary-card__value">
+                {{ summary.converted }}
+            </strong>
+
+            <span class="evaluation-summary-card__description">
+                Prospects now on paid plans
+            </span>
+
+        </article>
+
+    </section>
+
+
+    <!-- =====================================================
+         CREATE EVALUATION
+    ====================================================== -->
+
+    <section class="evaluation-panel">
+
+        <div class="evaluation-panel__header">
+
+            <div>
+
+                <p class="eyebrow">
+                    New Prospect
+                </p>
+
+                <h2>
+                    Create Evaluation
+                </h2>
+
+                <p>
+                    Generate secure temporary access for a
+                    prospective PreClear Business customer.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <form
+            method="post"
+            action="/admin/evaluations"
+            class="evaluation-create-form"
+        >
+
+            <div class="evaluation-form-grid">
+
+                <label class="evaluation-field">
+
+                    <span>
+                        Prospect Name
+                    </span>
+
+                    <input
+                        type="text"
+                        name="prospect_name"
+                        placeholder="Jane Smith"
+                        required
+                    >
+
+                </label>
+
+
+                <label class="evaluation-field">
+
+                    <span>
+                        Company
+                    </span>
+
+                    <input
+                        type="text"
+                        name="company_name"
+                        placeholder="Acme Company"
+                        required
+                    >
+
+                </label>
+
+
+                <label class="evaluation-field">
+
+                    <span>
+                        Email
+                    </span>
+
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="jane@company.com"
+                        required
+                    >
+
+                </label>
+
+
+                <label class="evaluation-field">
+
+                    <span>
+                        Evaluation Period
+                    </span>
+
+                    <select
+                        name="access_days"
+                        required
+                    >
+
+                        <option value="3">
+                            3 days
+                        </option>
+
+                        <option
+                            value="7"
+                            selected
+                        >
+                            7 days
+                        </option>
+
+                        <option value="14">
+                            14 days
+                        </option>
+
+                        <option value="30">
+                            30 days
+                        </option>
+
+                    </select>
+
+                </label>
+
+            </div>
+
+
+            <div class="evaluation-form-actions">
+
+                <button
+                    class="button button--primary"
+                    type="submit"
+                >
+                    Create Evaluation
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+
+    <!-- =====================================================
+         NEW INVITATION RESULT
+    ====================================================== -->
+
+    {% if created_evaluation %}
+
+        <section class="evaluation-panel evaluation-panel--success">
+
+            <div class="evaluation-panel__header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        Invitation Ready
+                    </p>
+
+                    <h2>
+                        Evaluation Created
+                    </h2>
+
+                    <p>
+                        Copy the secure link below and send it
+                        directly to the prospect.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="evaluation-copy-row">
+
+                <input
+                    id="new-evaluation-link"
+                    class="evaluation-link-field"
+                    type="text"
+                    readonly
+                    value="{{ request.base_url }}evaluation/invite/{{ created_evaluation.token }}"
+                >
+
+                <button
+                    class="button button--outline"
+                    type="button"
+                    onclick="
+                        navigator.clipboard.writeText(
+                            document.getElementById(
+                                'new-evaluation-link'
+                            ).value
+                        );
+
+                        this.textContent = 'Copied ✓';
+
+                        setTimeout(
+                            () => this.textContent = 'Copy Invite',
+                            1500
+                        );
+                    "
+                >
+                    Copy Invite
+                </button>
+
+            </div>
+
+        </section>
+
+    {% endif %}
+
+
+    <!-- =====================================================
+         EVALUATIONS TABLE
+    ====================================================== -->
+
+    <section class="evaluation-panel">
+
+        <div class="evaluation-panel__header evaluation-panel__header--table">
+
+            <div>
+
+                <p class="eyebrow">
+                    Prospect Pipeline
+                </p>
+
+                <h2>
+                    Evaluations
+                </h2>
+
+                <p>
+                    Review invitation status, evaluation access,
+                    expiration dates, and prospect actions.
+                </p>
+
+            </div>
+
+            {% if evaluations %}
+
+                <span class="evaluation-record-count">
+                    {{ evaluations | length }}
+                    record{% if evaluations | length != 1 %}s{% endif %}
+                </span>
+
+            {% endif %}
+
+        </div>
+
+
+        {% if evaluations %}
+
+            <div class="evaluation-table-wrap">
+
+                <table class="evaluation-table">
+
+                    <colgroup>
+                        <col class="evaluation-col--prospect">
+                        <col class="evaluation-col--company">
+                        <col class="evaluation-col--email">
+                        <col class="evaluation-col--access">
+                        <col class="evaluation-col--status">
+                        <col class="evaluation-col--expires">
+                        <col class="evaluation-col--details">
+                        <col class="evaluation-col--invite">
+                        <col class="evaluation-col--actions">
+                    </colgroup>
+
+
+                    <thead>
+
+                        <tr>
+                            <th>Prospect</th>
+                            <th>Company</th>
+                            <th>Email</th>
+                            <th>Access</th>
+                            <th>Status</th>
+                            <th>Expires</th>
+                            <th>Details</th>
+                            <th>Invite</th>
+                            <th>Actions</th>
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for evaluation in evaluations %}
+
+                            <tr>
+
+                                <td>
+
+                                    <div class="evaluation-table__primary">
+                                        {{ evaluation.prospect_name }}
+                                    </div>
+
+                                </td>
+
+
+                                <td>
+                                    {{ evaluation.company_name }}
+                                </td>
+
+
+                                <td>
+
+                                    <a
+                                        class="evaluation-table__email"
+                                        href="mailto:{{ evaluation.email }}"
+                                    >
+                                        {{ evaluation.email }}
+                                    </a>
+
+                                </td>
+
+
+                                <td>
+                                    {{ evaluation.access_days }} days
+                                </td>
+
+
+                                <td>
+
+                                    <span
+                                        class="
+                                            evaluation-status
+                                            evaluation-status--{{ evaluation.display_status | lower }}
+                                        "
+                                    >
+                                        {{ evaluation.display_status }}
+                                    </span>
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if evaluation.evaluation_expires_at %}
+
+                                        {{
+                                            evaluation.evaluation_expires_at
+                                            .strftime("%b %d, %Y")
+                                        }}
+
+                                    {% elif evaluation.status == "pending" %}
+
+                                        <span class="evaluation-muted">
+                                            Starts on acceptance
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="evaluation-muted">
+                                            —
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td>
+
+                                    <a
+                                        class="evaluation-text-link"
+                                        href="/admin/evaluations/{{ evaluation.id }}"
+                                    >
+                                        View
+                                    </a>
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if evaluation.status == "pending" %}
+
+                                        <div class="evaluation-inline-actions">
+
+                                            <a
+                                                class="button small"
+                                                href="/evaluation/invite/{{ evaluation.token }}"
+                                                target="_blank"
+                                                rel="noopener"
+                                            >
+                                                Open
+                                            </a>
+
+
+                                            <button
+                                                class="button small"
+                                                type="button"
+                                                onclick="
+                                                    navigator.clipboard.writeText(
+                                                        '{{ request.base_url }}evaluation/invite/{{ evaluation.token }}'
+                                                    ).then(() => {
+                                                        const original =
+                                                            this.textContent;
+
+                                                        this.textContent =
+                                                            'Copied ✓';
+
+                                                        setTimeout(
+                                                            () => {
+                                                                this.textContent =
+                                                                    original;
+                                                            },
+                                                            1500
+                                                        );
+                                                    });
+                                                "
+                                            >
+                                                Copy
+                                            </button>
+
+                                        </div>
+
+                                    {% else %}
+
+                                        <span class="evaluation-muted">
+                                            —
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td>
+
+                                    <div class="evaluation-table-actions">
+
+                                        {% if evaluation.organization_id
+                                              and evaluation.status != "converted" %}
+
+                                            <form
+                                                method="post"
+                                                action="/admin/evaluations/{{ evaluation.id }}/extend"
+                                                class="evaluation-extend-form"
+                                            >
+
+                                                <select name="days">
+
+                                                    <option value="3">
+                                                        +3
+                                                    </option>
+
+                                                    <option
+                                                        value="7"
+                                                        selected
+                                                    >
+                                                        +7
+                                                    </option>
+
+                                                    <option value="14">
+                                                        +14
+                                                    </option>
+
+                                                    <option value="30">
+                                                        +30
+                                                    </option>
+
+                                                </select>
+
+                                                <button
+                                                    class="button small"
+                                                    type="submit"
+                                                >
+                                                    Extend
+                                                </button>
+
+                                            </form>
+
+                                        {% endif %}
+
+
+                                        {% if evaluation.status not in [
+                                            "revoked",
+                                            "converted"
+                                        ] %}
+
+                                            <form
+                                                method="post"
+                                                action="/admin/evaluations/{{ evaluation.id }}/revoke"
+                                                class="evaluation-revoke-form"
+                                            >
+
+                                                <button
+                                                    class="button small evaluation-danger-button"
+                                                    type="submit"
+                                                    onclick="
+                                                        return confirm(
+                                                            'Revoke this evaluation? The prospect will lose access immediately.'
+                                                        );
+                                                    "
+                                                >
+                                                    Revoke
+                                                </button>
+
+                                            </form>
+
+                                        {% endif %}
+
+
+                                        {% if evaluation.status == "converted" %}
+
+                                            <span class="evaluation-muted">
+                                                Customer
+                                            </span>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="evaluation-empty-state">
+
+                <h3>
+                    No evaluations yet
+                </h3>
+
+                <p>
+                    Create your first prospect evaluation using
+                    the form above.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </section>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}
+PreClear Business Evaluation
+{% endblock %}
+
+{% block content %}
+
+<main class="evaluation-public-page">
+
+    <section class="evaluation-public-card">
+
+        {% if error and not invitation %}
+
+            <p class="eyebrow">
+                PRECLEAR BUSINESS
+            </p>
+
+            <h1>
+                Evaluation Unavailable
+            </h1>
+
+            <div class="evaluation-message">
+                {{ error }}
+            </div>
+
+            <p class="evaluation-public-card__lead">
+                If you believe this invitation should still be
+                available, please contact PreClear.
+            </p>
+
+
+        {% else %}
+
+            <p class="eyebrow">
+                PRECLEAR BUSINESS
+            </p>
+
+            <h1>
+                Your PreClear Business Evaluation
+            </h1>
+
+            <p class="evaluation-public-card__lead">
+                You've been invited to experience PreClear Business
+                with temporary access to the platform.
+            </p>
+
+
+            <div class="evaluation-public-meta">
+
+                <div class="evaluation-public-meta__item">
+
+                    <span>
+                        Prepared For
+                    </span>
+
+                    <strong>
+                        {{ invitation.prospect_name }}
+                    </strong>
+
+                </div>
+
+
+                <div class="evaluation-public-meta__item">
+
+                    <span>
+                        Company
+                    </span>
+
+                    <strong>
+                        {{ invitation.company_name }}
+                    </strong>
+
+                </div>
+
+
+                <div class="evaluation-public-meta__item">
+
+                    <span>
+                        Evaluation
+                    </span>
+
+                    <strong>
+                        {{ invitation.access_days }} days
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            {% if error %}
+
+                <div class="evaluation-message">
+                    {{ error }}
+                </div>
+
+            {% endif %}
+
+
+            <form
+                method="post"
+                action="/evaluation/invite/{{ invitation.token }}"
+                class="evaluation-public-form"
+            >
+
+                {% if existing_user %}
+
+                    <p class="evaluation-public-card__lead">
+                        An existing PreClear account was found for
+                        <strong>{{ invitation.email }}</strong>.
+                        Enter your password to activate this evaluation.
+                    </p>
+
+
+                {% else %}
+
+                    <label class="evaluation-field">
+
+                        <span>
+                            Your Name
+                        </span>
+
+                        <input
+                            type="text"
+                            name="name"
+                            value="{{ invitation.prospect_name }}"
+                            required
+                        >
+
+                    </label>
+
+
+                    <p class="evaluation-public-card__lead">
+                        Your PreClear account will use
+                        <strong>{{ invitation.email }}</strong>.
+                    </p>
+
+                {% endif %}
+
+
+                <label class="evaluation-field">
+
+                    <span>
+                        Password
+                    </span>
+
+                    <input
+                        type="password"
+                        name="password"
+                        minlength="10"
+                        required
+                    >
+
+                </label>
+
+
+                {% if not existing_user %}
+
+                    <label class="evaluation-field">
+
+                        <span>
+                            Confirm Password
+                        </span>
+
+                        <input
+                            type="password"
+                            name="password_confirm"
+                            minlength="10"
+                            required
+                        >
+
+                    </label>
+
+                {% else %}
+
+                    <input
+                        type="hidden"
+                        name="password_confirm"
+                        value=""
+                    >
+
+                {% endif %}
+
+
+                <div class="evaluation-public-actions">
+
+                    <button
+                        class="button button--primary"
+                        type="submit"
+                    >
+                        Start My Evaluation
+                    </button>
+
+                </div>
+
+            </form>
+
+        {% endif %}
+
+    </section>
+
+</main>
+
+{% endblock %}

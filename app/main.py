@@ -18,9 +18,14 @@ from app.routes import (
     contact,
     billing,
     account,
+    admin_evaluations,
 )
 
 from app import config
+
+from app.evaluation_middleware import (
+    EvaluationAccessMiddleware,
+)
 
 
 Base.metadata.create_all(bind=engine)
@@ -42,6 +47,10 @@ app = FastAPI(
         if config.IS_PRODUCTION
         else "/openapi.json"
     ),
+)
+
+app.add_middleware(
+    EvaluationAccessMiddleware,
 )
 
 app.add_middleware(
@@ -111,4 +120,8 @@ app.include_router(
 
 app.include_router(
     account.router,
+)
+
+app.include_router(
+    admin_evaluations.router,
 )

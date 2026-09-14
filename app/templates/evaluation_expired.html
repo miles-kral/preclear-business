@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}
+Evaluation Complete | PreClear Business
+{% endblock %}
+
+{% block content %}
+
+<main class="evaluation-public-page">
+
+    <section class="evaluation-public-card">
+
+        <p class="eyebrow">
+            PRECLEAR BUSINESS
+        </p>
+
+        <h1>
+            Your evaluation has ended
+        </h1>
+
+        <p class="evaluation-public-card__lead">
+            Thank you for evaluating PreClear Business.
+            Your workspace and evaluation information remain
+            intact.
+        </p>
+
+        <p class="evaluation-public-card__lead">
+            Choose a PreClear Business plan to continue using
+            the platform, or contact us if you'd like to discuss
+            which option is right for your organization.
+        </p>
+
+
+        <div class="evaluation-public-actions">
+
+            <a
+                class="button button--primary"
+                href="/pricing"
+            >
+                View Plans
+            </a>
+
+            <a
+                class="button button--outline"
+                href="/contact"
+            >
+                Contact PreClear
+            </a>
+
+        </div>
+
+    </section>
+
+</main>
+
+{% endblock %}

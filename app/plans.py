@@ -37,6 +37,7 @@ SUBSCRIPTION_ACCESS_STATUSES = {
     "active",
     "trialing",
     "past_due",
+    "internal",
 }
 
 

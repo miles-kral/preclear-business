@@ -9,6 +9,7 @@ from app.dependencies import (
     get_current_membership,
     get_current_organization,
     get_current_user,
+    is_platform_admin,
 )
 from app.models import Analysis, AuditEvent, Environment, Membership, Organization, User
 from app.plans import get_plan_config
@@ -687,6 +688,9 @@ def dashboard_page(
             "current_user": current_user,
             "current_organization": current_organization,
             "current_membership": current_membership,
+            "platform_admin": is_platform_admin(
+                current_user
+            ),
             "total_decisions": total_decisions,
             "looks_safe_count": looks_safe_count,
             "use_caution_count": use_caution_count,

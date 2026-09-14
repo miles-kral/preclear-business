@@ -335,6 +335,87 @@ class TeamInvitation(Base):
         nullable=True,
     )
 
+class EvaluationInvitation(Base):
+    __tablename__ = "evaluation_invitations"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+    )
+
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+
+    organization_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organizations.id"),
+        nullable=True,
+        index=True,
+    )
+
+    prospect_name: Mapped[str] = mapped_column(
+        String(180),
+        nullable=False,
+    )
+
+    company_name: Mapped[str] = mapped_column(
+        String(180),
+        nullable=False,
+    )
+
+    email: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        index=True,
+    )
+
+    token: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(30),
+        default="pending",
+        nullable=False,
+    )
+
+    access_days: Mapped[int] = mapped_column(
+        Integer,
+        default=7,
+        nullable=False,
+    )
+
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+
+    accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    evaluation_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+    )
+
 class Environment(Base):
     __tablename__ = "environments"
 
