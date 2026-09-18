@@ -110,3 +110,13 @@ PLATFORM_ADMIN_EMAILS = {
     ).split(",")
     if email.strip()
 }
+
+TURNSTILE_SITE_KEY = os.getenv(
+    "TURNSTILE_SITE_KEY",
+    "",
+)
+
+TURNSTILE_SECRET_KEY = os.getenv(
+    "TURNSTILE_SECRET_KEY",
+    "",
+)

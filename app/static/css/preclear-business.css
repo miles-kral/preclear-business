@@ -9547,3 +9547,10 @@ a.business-governance-stat:hover {
         grid-template-columns: 1fr;
     }
 }
+
+.business-contact-form__turnstile {
+    display: flex;
+    justify-content: flex-start;
+
+    margin-top: 4px;
+}

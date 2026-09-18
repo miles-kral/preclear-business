@@ -28,7 +28,19 @@ from app.services.email_service import (
     send_sales_inquiry_email,
     send_support_request_email,
 )
-from app.config import APP_BASE_URL
+from app.config import (
+    APP_BASE_URL,
+    TURNSTILE_SECRET_KEY,
+    TURNSTILE_SITE_KEY,
+)
+
+from app.contact_security import (
+    contact_rate_limit_exceeded,
+    get_request_ip,
+    verify_turnstile,
+)
+
+import time
 
 router = APIRouter()
 
@@ -44,6 +56,10 @@ templates = Jinja2Templates(
 def contact_page(
     request: Request,
 ):
+
+    request.session[
+        "contact_form_loaded_at"
+    ] = time.time()
     return templates.TemplateResponse(
         request=request,
         name="contact.html",
@@ -62,6 +78,7 @@ def contact_page(
             "canonical_url": (
                 f"{APP_BASE_URL}/contact"
             ),
+            "turnstile_site_key": TURNSTILE_SITE_KEY,
         },
     )
 
@@ -121,6 +138,11 @@ def support_page(
 @router.post("/contact")
 def submit_contact_request(
     request: Request,
+    website: str = Form(""),
+    turnstile_token: str = Form(
+        "",
+        alias="cf-turnstile-response",
+    ),
     company_name: str = Form(...),
     contact_name: str = Form(...),
     contact_email: str = Form(...),
@@ -133,6 +155,59 @@ def submit_contact_request(
         get_current_organization
     ),
 ):
+
+    if website.strip():
+        return RedirectResponse(
+            url="/contact?sent=1",
+            status_code=303,
+        )
+
+    form_loaded_at = request.session.pop(
+        "contact_form_loaded_at",
+        None,
+    )
+
+    if form_loaded_at is None:
+        return RedirectResponse(
+            url="/contact?sent=1",
+            status_code=303,
+        )
+
+    form_fill_seconds = (
+        time.time()
+        - form_loaded_at
+    )
+
+    if (
+        form_fill_seconds < 3
+        or form_fill_seconds > 7200
+    ):
+        return RedirectResponse(
+            url="/contact?sent=1",
+            status_code=303,
+        )
+
+    client_ip = get_request_ip(
+        request
+    )
+
+    if not verify_turnstile(
+        token=turnstile_token,
+        secret_key=TURNSTILE_SECRET_KEY,
+        remote_ip=client_ip,
+    ):
+        return RedirectResponse(
+            url="/contact?sent=1",
+            status_code=303,
+        )
+
+    if contact_rate_limit_exceeded(
+        request
+    ):
+        return RedirectResponse(
+            url="/contact?sent=1",
+            status_code=303,
+        )
     company_name = company_name.strip()
     contact_name = contact_name.strip()
     contact_email = contact_email.strip()
