@@ -654,56 +654,6 @@ class AuditEvent(Base):
         back_populates="audit_events",
     )
 
-
-class Invitation(Base):
-    __tablename__ = "invitations"
-
-    id: Mapped[int] = mapped_column(
-        Integer,
-        primary_key=True,
-    )
-
-    organization_id: Mapped[int] = mapped_column(
-        ForeignKey("organizations.id"),
-        nullable=False,
-        index=True,
-    )
-
-    email: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-    )
-
-    role: Mapped[str] = mapped_column(
-        String(30),
-        default="viewer",
-        nullable=False,
-    )
-
-    token: Mapped[str] = mapped_column(
-        String(255),
-        unique=True,
-        nullable=False,
-    )
-
-    accepted: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
-        nullable=False,
-    )
-
-    expires_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=utc_now,
-        nullable=False,
-    )
-
-
 class BillingRequest(Base):
     __tablename__ = "billing_requests"
 
