@@ -809,49 +809,6 @@ Dashboard
                     ></span>
 
                 </div>
-
-                <script>
-                    document.addEventListener(
-                        "DOMContentLoaded",
-                        function () {
-
-                            const riskBar =
-                                document.querySelector(
-                                    ".business-dashboard-risk__bar"
-                                );
-
-                            if (!riskBar) {
-                                return;
-                            }
-
-                            const safeBar =
-                                riskBar.querySelector(
-                                    ".business-dashboard-risk__bar-safe"
-                                );
-
-                            const cautionBar =
-                                riskBar.querySelector(
-                                    ".business-dashboard-risk__bar-caution"
-                                );
-
-                            const dangerBar =
-                                riskBar.querySelector(
-                                    ".business-dashboard-risk__bar-danger"
-                                );
-
-                            safeBar.style.width =
-                                riskBar.dataset.safe + "%";
-
-                            cautionBar.style.width =
-                                riskBar.dataset.caution + "%";
-
-                            dangerBar.style.width =
-                                riskBar.dataset.danger + "%";
-                        }
-                    );
-                </script>
-
-
                 <p class="business-dashboard-risk__note">
 
                     {{ current_period_attention_count }}
@@ -1147,38 +1104,6 @@ Dashboard
 
             </div>
 
-
-            <script>
-            document.addEventListener(
-                "DOMContentLoaded",
-                function () {
-
-                    const usageBars =
-                        document.querySelectorAll(
-                            ".business-dashboard-usage__bar"
-                        );
-
-                    usageBars.forEach(
-                        function (usageBar) {
-
-                            const fill =
-                                usageBar.querySelector(
-                                    "span"
-                                );
-
-                            if (!fill) {
-                                return;
-                            }
-
-                            fill.style.width =
-                                usageBar.dataset.usage + "%";
-                        }
-                    );
-                }
-            );
-            </script>
-
-
             <a
                 class="button button--outline button--full"
                 href="/settings"
@@ -1273,5 +1198,10 @@ Dashboard
     </aside>
 
 </section>
+
+<script
+    src="/static/js/dashboard.js"
+    defer
+></script>
 
 {% endblock %}

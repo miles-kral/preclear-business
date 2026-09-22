@@ -20,7 +20,7 @@ class SecurityHeadersMiddleware(
             "Content-Security-Policy"
         ] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' "
+            "script-src 'self' "
             "https://challenges.cloudflare.com; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; "

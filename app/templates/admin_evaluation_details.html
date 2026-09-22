@@ -259,22 +259,10 @@ Evaluation Details
                 >
 
                 <button
-                    class="button button--outline"
+                    class="button button--outline evaluation-copy-button"
                     type="button"
-                    onclick="
-                        navigator.clipboard.writeText(
-                            document.getElementById(
-                                'evaluation-detail-link'
-                            ).value
-                        );
-
-                        this.textContent = 'Copied ✓';
-
-                        setTimeout(
-                            () => this.textContent = 'Copy Invite',
-                            1500
-                        );
-                    "
+                    data-copy-target="evaluation-detail-link"
+                    data-default-label="Copy Invite"
                 >
                     Copy Invite
                 </button>
@@ -483,11 +471,6 @@ Evaluation Details
                     <button
                         class="button button--outline evaluation-danger-button"
                         type="submit"
-                        onclick="
-                            return confirm(
-                                'Revoke this evaluation? The prospect will lose access immediately.'
-                            );
-                        "
                     >
                         Revoke Access
                     </button>
@@ -515,5 +498,10 @@ Evaluation Details
     </section>
 
 </div>
+
+<script
+    src="/static/js/admin_evaluations.js"
+    defer
+></script>
 
 {% endblock %}

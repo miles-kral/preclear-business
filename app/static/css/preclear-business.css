@@ -5980,13 +5980,20 @@
     display: grid;
 
     grid-template-columns:
-        minmax(180px, 0.8fr)
-        minmax(280px, 1.5fr)
-        auto;
+        minmax(0, 0.8fr)
+        minmax(0, 1.5fr);
+
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 
     align-items: end;
 
     gap: 14px;
+}
+
+.business-environment-edit-form > div {
+    min-width: 0;
 }
 
 
@@ -6005,6 +6012,7 @@
 .business-environment-edit-form input {
     width: 100%;
     min-height: 42px;
+    box-sizing: border-box;
 
     padding:
         0 12px;
@@ -6026,8 +6034,10 @@
 
 .business-environment-edit-form__actions {
     display: flex;
-
     gap: 8px;
+
+    grid-column: 1 / -1;
+    justify-content: flex-end;
 }
 
 

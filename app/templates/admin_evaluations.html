@@ -294,22 +294,10 @@ Prospect Evaluations
                 >
 
                 <button
-                    class="button button--outline"
+                    class="button button--outline evaluation-copy-button"
                     type="button"
-                    onclick="
-                        navigator.clipboard.writeText(
-                            document.getElementById(
-                                'new-evaluation-link'
-                            ).value
-                        );
-
-                        this.textContent = 'Copied ✓';
-
-                        setTimeout(
-                            () => this.textContent = 'Copy Invite',
-                            1500
-                        );
-                    "
+                    data-copy-target="new-evaluation-link"
+                    data-default-label="Copy Invite"
                 >
                     Copy Invite
                 </button>
@@ -500,27 +488,10 @@ Prospect Evaluations
 
 
                                             <button
-                                                class="button small"
+                                                class="button small evaluation-copy-button"
                                                 type="button"
-                                                onclick="
-                                                    navigator.clipboard.writeText(
-                                                        '{{ request.base_url }}evaluation/invite/{{ evaluation.token }}'
-                                                    ).then(() => {
-                                                        const original =
-                                                            this.textContent;
-
-                                                        this.textContent =
-                                                            'Copied ✓';
-
-                                                        setTimeout(
-                                                            () => {
-                                                                this.textContent =
-                                                                    original;
-                                                            },
-                                                            1500
-                                                        );
-                                                    });
-                                                "
+                                                data-copy-value="{{ request.base_url }}evaluation/invite/{{ evaluation.token }}"
+                                                data-default-label="Copy"
                                             >
                                                 Copy
                                             </button>
@@ -600,11 +571,6 @@ Prospect Evaluations
                                                 <button
                                                     class="button small evaluation-danger-button"
                                                     type="submit"
-                                                    onclick="
-                                                        return confirm(
-                                                            'Revoke this evaluation? The prospect will lose access immediately.'
-                                                        );
-                                                    "
                                                 >
                                                     Revoke
                                                 </button>
@@ -656,5 +622,10 @@ Prospect Evaluations
     </section>
 
 </div>
+
+<script
+    src="/static/js/admin_evaluations.js"
+    defer
+></script>
 
 {% endblock %}

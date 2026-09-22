@@ -274,8 +274,8 @@ Team
                                 >
 
                                     <select
+                                        class="business-team-role-select"
                                         name="role"
-                                        onchange="this.form.submit()"
                                     >
 
                                         <option
@@ -317,13 +317,9 @@ Team
                                 {% if membership.user_id != current_user.id %}
 
                                     <form
+                                        class="business-team-remove-form"
                                         method="post"
                                         action="/team/{{ membership.id }}/remove"
-                                        onsubmit="
-                                            return confirm(
-                                                'Remove this user from the organization?'
-                                            );
-                                        "
                                     >
                                         <button
                                             class="business-team-remove"
@@ -458,13 +454,9 @@ Team
 
 
                                     <form
+                                        class="business-team-cancel-form"
                                         method="post"
                                         action="/team/invitations/{{ invitation.id }}/cancel"
-                                        onsubmit="
-                                            return confirm(
-                                                'Cancel this invitation?'
-                                            );
-                                        "
                                     >
                                         <button
                                             class="business-team-cancel-invite"
@@ -492,67 +484,9 @@ Team
 
 </section>
 
-<script>
-    document.addEventListener(
-        "DOMContentLoaded",
-        function () {
-
-            const copyButtons =
-                document.querySelectorAll(
-                    ".business-copy-invite"
-                );
-
-            copyButtons.forEach(
-                function (button) {
-
-                    button.addEventListener(
-                        "click",
-                        async function () {
-
-                            const path =
-                                button.dataset.invitePath;
-
-                            const inviteUrl =
-                                window.location.origin
-                                + path;
-
-                            try {
-
-                                await navigator.clipboard.writeText(
-                                    inviteUrl
-                                );
-
-                                const originalText =
-                                    button.textContent;
-
-                                button.textContent =
-                                    "Copied ✓";
-
-                                window.setTimeout(
-                                    function () {
-                                        button.textContent =
-                                            originalText;
-                                    },
-                                    1800
-                                );
-
-                            } catch (error) {
-
-                                window.prompt(
-                                    "Copy this invitation link:",
-                                    inviteUrl
-                                );
-
-                            }
-
-                        }
-                    );
-
-                }
-            );
-
-        }
-    );
-</script>
+<script
+    src="/static/js/team.js"
+    defer
+></script>
 
 {% endblock %}
