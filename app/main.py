@@ -31,6 +31,10 @@ from app.csrf import (
     CSRFMiddleware,
 )
 
+from app.security_headers import (
+    SecurityHeadersMiddleware,
+)
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -59,6 +63,10 @@ app.add_middleware(
 
 app.add_middleware(
     CSRFMiddleware,
+)
+
+app.add_middleware(
+    SecurityHeadersMiddleware,
 )
 
 app.add_middleware(
