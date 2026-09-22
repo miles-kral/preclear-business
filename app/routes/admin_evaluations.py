@@ -37,6 +37,13 @@ from app.auth import (
     verify_password,
 )
 
+from app.contact_security import (
+    clear_failed_login_attempts,
+    log_contact_security_event,
+    login_rate_limit_exceeded,
+    record_failed_login_attempt,
+)
+
 
 router = APIRouter()
 
@@ -439,6 +446,29 @@ def accept_evaluation(
 
     if existing_user is not None:
 
+        if login_rate_limit_exceeded(
+            request
+        ):
+            log_contact_security_event(
+                request,
+                "evaluation_login_blocked_rate_limit",
+            )
+
+            return templates.TemplateResponse(
+                request=request,
+                name="evaluation_accept.html",
+                context={
+                    "invitation": invitation,
+                    "existing_user": existing_user,
+                    "error": (
+                        "Too many authentication attempts. "
+                        "Please try again later."
+                    ),
+                    "robots_content": "noindex, nofollow",
+                },
+                status_code=429,
+            )
+
         if (
             not existing_user.is_active
             or not verify_password(
@@ -446,6 +476,15 @@ def accept_evaluation(
                 existing_user.password_hash,
             )
         ):
+
+            record_failed_login_attempt(
+                request
+            )
+
+            log_contact_security_event(
+                request,
+                "evaluation_login_failed",
+            )
             return templates.TemplateResponse(
                 request=request,
                 name="evaluation_accept.html",

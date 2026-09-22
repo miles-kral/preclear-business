@@ -244,9 +244,16 @@ def signup(
             f"${plan_config['monthly_price']}/month"
         )
 
+    if not pending_purchase.customer_email:
+        return RedirectResponse(
+            url="/pricing",
+            status_code=303,
+        )
+
     purchase_email = (
         pending_purchase.customer_email
-        or email
+        .strip()
+        .lower()
     )
 
     purchase_email = (
@@ -383,27 +390,39 @@ def signup(
     db.commit()
 
     if organization.stripe_subscription_id:
-        import stripe
+        try:
+            import stripe
 
-        from app.config import (
-            STRIPE_SECRET_KEY,
-        )
-
-        stripe.api_key = STRIPE_SECRET_KEY
-
-        subscription = (
-            stripe.Subscription.retrieve(
-                organization
-                .stripe_subscription_id
+            from app.config import (
+                STRIPE_SECRET_KEY,
             )
-        )
 
-        organization = (
-            sync_subscription_to_organization(
-                db,
-                subscription,
+            stripe.api_key = STRIPE_SECRET_KEY
+
+            subscription = (
+                stripe.Subscription.retrieve(
+                    organization
+                    .stripe_subscription_id
+                )
             )
-        )
+
+            organization = (
+                sync_subscription_to_organization(
+                    db,
+                    subscription,
+                )
+            )
+
+        except Exception as exc:
+            log_contact_security_event(
+                request,
+                "signup_stripe_sync_failed",
+            )
+
+            print(
+                "Post-signup Stripe sync failed:",
+                exc,
+            )
 
     pending_purchase.status = "claimed"
 
@@ -1504,6 +1523,8 @@ def claim_existing_purchase(
 
         db.add(membership)
 
+    pending_purchase.status = "claimed"
+
     db.commit()
 
     if organization.stripe_subscription_id:
@@ -1527,9 +1548,6 @@ def claim_existing_purchase(
                 subscription,
             )
         )
-
-    pending_purchase.status = "claimed"
-    db.commit()
 
     request.session.clear()
 
