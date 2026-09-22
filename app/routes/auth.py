@@ -1023,6 +1023,29 @@ def accept_invitation(
 
     if existing_user is not None:
 
+        if login_rate_limit_exceeded(
+            request
+        ):
+            log_contact_security_event(
+                request,
+                "invite_login_blocked_rate_limit",
+            )
+
+            return templates.TemplateResponse(
+                request=request,
+                name="invite_accept.html",
+                context={
+                    "invitation": invitation,
+                    "organization": organization,
+                    "existing_user": existing_user,
+                    "error": (
+                        "Too many authentication attempts. "
+                        "Please try again later."
+                    ),
+                },
+                status_code=429,
+            )
+
         if (
             not existing_user.is_active
             or not verify_password(
@@ -1030,6 +1053,14 @@ def accept_invitation(
                 existing_user.password_hash,
             )
         ):
+            record_failed_login_attempt(
+                request
+            )
+
+            log_contact_security_event(
+                request,
+                "invite_login_failed",
+            )
             return templates.TemplateResponse(
                 request=request,
                 name="invite_accept.html",
@@ -1331,14 +1362,14 @@ def claim_existing_purchase(
         .first()
     )
 
-    if (
-        user is None
-        or not user.is_active
-        or not verify_password(
-            password,
-            user.password_hash,
-        )
+    if login_rate_limit_exceeded(
+        request
     ):
+        log_contact_security_event(
+            request,
+            "purchase_claim_blocked_rate_limit",
+        )
+
         return RedirectResponse(
             url=(
                 "/signup"
@@ -1347,6 +1378,35 @@ def claim_existing_purchase(
             ),
             status_code=303,
         )
+
+    if (
+        user is None
+        or not user.is_active
+        or not verify_password(
+            password,
+            user.password_hash,
+        )
+    ):
+        record_failed_login_attempt(
+            request
+        )
+
+        log_contact_security_event(
+            request,
+            "purchase_claim_failed",
+        )
+        return RedirectResponse(
+            url=(
+                "/signup"
+                f"?purchase_token={purchase_token}"
+                "&claim_error=1"
+            ),
+            status_code=303,
+        )
+
+    clear_failed_login_attempts(
+        request
+    )
 
     existing_membership = (
         db.query(Membership)
