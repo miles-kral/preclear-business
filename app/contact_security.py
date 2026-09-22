@@ -13,12 +13,22 @@ CONTACT_RATE_WINDOW_SECONDS = 600
 PASSWORD_RESET_RATE_LIMIT = 3
 PASSWORD_RESET_RATE_WINDOW_SECONDS = 900
 
+LOGIN_RATE_LIMIT = 10
+LOGIN_RATE_WINDOW_SECONDS = 900
+
 _password_reset_times: dict[
     str,
     deque[float],
 ] = defaultdict(deque)
 
 _password_reset_lock = Lock()
+
+_login_attempt_times: dict[
+    str,
+    deque[float],
+] = defaultdict(deque)
+
+_login_attempt_lock = Lock()
 
 _submission_times: dict[
     str,
@@ -123,6 +133,76 @@ def password_reset_rate_limit_exceeded(
         timestamps.append(now)
 
     return False
+
+def login_rate_limit_exceeded(
+    request: Request,
+) -> bool:
+    client_ip = get_request_ip(
+        request
+    )
+
+    now = monotonic()
+    cutoff = (
+        now
+        - LOGIN_RATE_WINDOW_SECONDS
+    )
+
+    with _login_attempt_lock:
+        timestamps = _login_attempt_times[
+            client_ip
+        ]
+
+        while (
+            timestamps
+            and timestamps[0] < cutoff
+        ):
+            timestamps.popleft()
+
+        return (
+            len(timestamps)
+            >= LOGIN_RATE_LIMIT
+        )
+
+
+def record_failed_login_attempt(
+    request: Request,
+) -> None:
+    client_ip = get_request_ip(
+        request
+    )
+
+    now = monotonic()
+    cutoff = (
+        now
+        - LOGIN_RATE_WINDOW_SECONDS
+    )
+
+    with _login_attempt_lock:
+        timestamps = _login_attempt_times[
+            client_ip
+        ]
+
+        while (
+            timestamps
+            and timestamps[0] < cutoff
+        ):
+            timestamps.popleft()
+
+        timestamps.append(now)
+
+
+def clear_failed_login_attempts(
+    request: Request,
+) -> None:
+    client_ip = get_request_ip(
+        request
+    )
+
+    with _login_attempt_lock:
+        _login_attempt_times.pop(
+            client_ip,
+            None,
+        )
 
 def verify_turnstile(
     token: str,

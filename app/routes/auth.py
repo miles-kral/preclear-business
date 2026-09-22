@@ -28,9 +28,12 @@ import time
 
 from app import config
 from app.contact_security import (
+    clear_failed_login_attempts,
     get_request_ip,
     log_contact_security_event,
+    login_rate_limit_exceeded,
     password_reset_rate_limit_exceeded,
+    record_failed_login_attempt,
     verify_turnstile,
 )
 from app.services.email_service import (
@@ -762,6 +765,26 @@ def login(
 ):
     email = email.strip().lower()
 
+    if login_rate_limit_exceeded(
+        request
+    ):
+        log_contact_security_event(
+            request,
+            "login_blocked_rate_limit",
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={
+                "error": (
+                    "Too many login attempts. "
+                    "Please try again later."
+                ),
+            },
+            status_code=429,
+        )
+
     user = db.scalar(
         select(User).where(
             User.email == email
@@ -776,6 +799,15 @@ def login(
             user.password_hash,
         )
     ):
+
+        record_failed_login_attempt(
+            request
+        )
+
+        log_contact_security_event(
+            request,
+            "login_failed",
+        )
         return templates.TemplateResponse(
             request=request,
             name="login.html",
@@ -792,7 +824,15 @@ def login(
         )
     )
 
+
     if membership is None:
+        record_failed_login_attempt(
+            request
+        )
+        log_contact_security_event(
+                    request,
+                    "login_failed_membership",
+                )
         return templates.TemplateResponse(
             request=request,
             name="login.html",
@@ -810,6 +850,16 @@ def login(
     request.session["user_id"] = user.id
     request.session["organization_id"] = (
         membership.organization_id
+    )
+
+    clear_failed_login_attempts(
+        request
+    )
+
+    log_contact_security_event(
+        request,
+        "login_succeeded",
+        blocked=False,
     )
 
     return RedirectResponse(
