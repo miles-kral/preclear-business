@@ -27,6 +27,10 @@ from app.evaluation_middleware import (
     EvaluationAccessMiddleware,
 )
 
+from app.csrf import (
+    CSRFMiddleware,
+)
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -51,6 +55,10 @@ app = FastAPI(
 
 app.add_middleware(
     EvaluationAccessMiddleware,
+)
+
+app.add_middleware(
+    CSRFMiddleware,
 )
 
 app.add_middleware(
