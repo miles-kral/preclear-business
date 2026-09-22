@@ -60,6 +60,17 @@ APP_BASE_URL = os.getenv(
     "http://127.0.0.1:8000",
 ).rstrip("/")
 
+if (
+    IS_PRODUCTION
+    and not APP_BASE_URL.startswith(
+        "https://"
+    )
+):
+    raise RuntimeError(
+        "APP_BASE_URL must use HTTPS "
+        "in production."
+    )
+
 VIRUSTOTAL_API_KEY = os.getenv(
     "VIRUSTOTAL_API_KEY",
     "",

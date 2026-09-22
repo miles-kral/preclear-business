@@ -5,6 +5,7 @@ from time import monotonic
 from fastapi import Request
 import requests
 import logging
+from app import config
 
 
 CONTACT_RATE_LIMIT = 3
@@ -45,17 +46,17 @@ logger = logging.getLogger(
 def get_request_ip(
     request: Request,
 ) -> str:
-    forwarded_for = request.headers.get(
-        "x-forwarded-for",
-        "",
-    )
-
-    if forwarded_for:
-        return (
-            forwarded_for
-            .split(",")[0]
+    if config.IS_PRODUCTION:
+        cf_connecting_ip = (
+            request.headers.get(
+                "cf-connecting-ip",
+                "",
+            )
             .strip()
         )
+
+        if cf_connecting_ip:
+            return cf_connecting_ip
 
     if request.client:
         return request.client.host

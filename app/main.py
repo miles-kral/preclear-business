@@ -58,6 +58,7 @@ app.add_middleware(
     secret_key=config.SESSION_SECRET_KEY,
     same_site="lax",
     https_only=config.IS_PRODUCTION,
+    max_age=60 * 60 * 8,
 )
 
 app.mount(
