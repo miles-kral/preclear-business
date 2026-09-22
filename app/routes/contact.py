@@ -28,17 +28,15 @@ from app.services.email_service import (
     send_sales_inquiry_email,
     send_support_request_email,
 )
-from app.config import (
-    APP_BASE_URL,
-    TURNSTILE_SECRET_KEY,
-    TURNSTILE_SITE_KEY,
-)
 
 from app.contact_security import (
     contact_rate_limit_exceeded,
     get_request_ip,
+    log_contact_security_event,
     verify_turnstile,
 )
+
+from app import config
 
 import time
 
@@ -76,9 +74,9 @@ def contact_page(
                 "sales, or enterprise questions."
             ),
             "canonical_url": (
-                f"{APP_BASE_URL}/contact"
+                f"{config.APP_BASE_URL}/contact"
             ),
-            "turnstile_site_key": TURNSTILE_SITE_KEY,
+            "turnstile_site_key": config.TURNSTILE_SITE_KEY,
         },
     )
 
@@ -157,6 +155,11 @@ def submit_contact_request(
 ):
 
     if website.strip():
+        log_contact_security_event(
+            request,
+            "contact_blocked_honeypot",
+        )
+
         return RedirectResponse(
             url="/contact?sent=1",
             status_code=303,
@@ -168,6 +171,11 @@ def submit_contact_request(
     )
 
     if form_loaded_at is None:
+        log_contact_security_event(
+            request,
+            "contact_blocked_timing",
+        )
+
         return RedirectResponse(
             url="/contact?sent=1",
             status_code=303,
@@ -182,6 +190,11 @@ def submit_contact_request(
         form_fill_seconds < 3
         or form_fill_seconds > 7200
     ):
+        log_contact_security_event(
+            request,
+            "contact_blocked_timing",
+        )
+
         return RedirectResponse(
             url="/contact?sent=1",
             status_code=303,
@@ -193,9 +206,18 @@ def submit_contact_request(
 
     if not verify_turnstile(
         token=turnstile_token,
-        secret_key=TURNSTILE_SECRET_KEY,
+        secret_key=config.TURNSTILE_SECRET_KEY,
         remote_ip=client_ip,
+        expected_action="business_contact",
+        allowed_hostnames=(
+            config.TURNSTILE_ALLOWED_HOSTNAMES
+        ),
     ):
+        log_contact_security_event(
+            request,
+            "contact_blocked_turnstile",
+        )
+
         return RedirectResponse(
             url="/contact?sent=1",
             status_code=303,
@@ -204,6 +226,11 @@ def submit_contact_request(
     if contact_rate_limit_exceeded(
         request
     ):
+        log_contact_security_event(
+            request,
+            "contact_blocked_rate_limit",
+        )
+
         return RedirectResponse(
             url="/contact?sent=1",
             status_code=303,
@@ -261,6 +288,12 @@ def submit_contact_request(
     )
 
     db.commit()
+
+    log_contact_security_event(
+        request,
+        "contact_accepted",
+        blocked=False,
+    )
 
     try:
         send_sales_inquiry_email(

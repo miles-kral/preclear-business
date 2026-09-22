@@ -120,3 +120,12 @@ TURNSTILE_SECRET_KEY = os.getenv(
     "TURNSTILE_SECRET_KEY",
     "",
 )
+
+TURNSTILE_ALLOWED_HOSTNAMES = {
+    hostname.strip().lower()
+    for hostname in os.getenv(
+        "TURNSTILE_ALLOWED_HOSTNAMES",
+        "preclearbusiness.com,www.preclearbusiness.com",
+    ).split(",")
+    if hostname.strip()
+}

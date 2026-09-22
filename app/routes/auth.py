@@ -24,6 +24,24 @@ from app.routes.billing import (
 )
 
 
+import time
+
+from app import config
+from app.contact_security import (
+    get_request_ip,
+    log_contact_security_event,
+    password_reset_rate_limit_exceeded,
+    verify_turnstile,
+)
+from app.services.email_service import (
+    send_password_reset_email,
+)
+from app.services.password_reset_service import (
+    create_password_reset_token,
+    get_valid_password_reset_token,
+    mark_password_reset_token_used,
+)
+
 router = APIRouter()
 
 templates = Jinja2Templates(
@@ -400,6 +418,320 @@ def signup(
         status_code=303,
     )
 
+@router.get(
+    "/forgot-password",
+    response_class=HTMLResponse,
+)
+def forgot_password_page(
+    request: Request,
+) -> HTMLResponse:
+    if request.session.get("user_id") is not None:
+        return RedirectResponse(
+            url="/dashboard",
+            status_code=303,
+        )
+
+    request.session[
+        "forgot_password_form_loaded_at"
+    ] = time.time()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="forgot_password.html",
+        context={
+            "turnstile_site_key":
+                config.TURNSTILE_SITE_KEY,
+        },
+    )
+
+@router.post(
+    "/forgot-password",
+    response_class=HTMLResponse,
+)
+def forgot_password(
+    request: Request,
+    website: str = Form(""),
+    turnstile_token: str = Form(
+        "",
+        alias="cf-turnstile-response",
+    ),
+    email: str = Form(...),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    if website.strip():
+        log_contact_security_event(
+            request,
+            "password_reset_blocked_honeypot",
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="forgot_password.html",
+            context={
+                "submitted": True,
+                "email": email.strip().lower(),
+            },
+        )
+
+    form_loaded_at = request.session.get(
+        "forgot_password_form_loaded_at"
+    )
+
+    if form_loaded_at is None:
+        log_contact_security_event(
+            request,
+            "password_reset_blocked_timing",
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="forgot_password.html",
+            context={
+                "submitted": True,
+                "email": email.strip().lower(),
+            },
+        )
+
+    form_fill_seconds = (
+        time.time()
+        - form_loaded_at
+    )
+
+    if (
+        form_fill_seconds < 3
+        or form_fill_seconds > 7200
+    ):
+        log_contact_security_event(
+            request,
+            "password_reset_blocked_timing",
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="forgot_password.html",
+            context={
+                "submitted": True,
+                "email": email.strip().lower(),
+            },
+        )
+
+    client_ip = get_request_ip(
+        request
+    )
+
+    if not verify_turnstile(
+        token=turnstile_token,
+        secret_key=config.TURNSTILE_SECRET_KEY,
+        remote_ip=client_ip,
+        expected_action="business_forgot_password",
+        allowed_hostnames=(
+            config.TURNSTILE_ALLOWED_HOSTNAMES
+        ),
+    ):
+        log_contact_security_event(
+            request,
+            "password_reset_blocked_turnstile",
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="forgot_password.html",
+            context={
+                "submitted": True,
+                "email": email.strip().lower(),
+            },
+        )
+
+    if password_reset_rate_limit_exceeded(
+        request
+    ):
+        log_contact_security_event(
+            request,
+            "password_reset_blocked_rate_limit",
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="forgot_password.html",
+            context={
+                "submitted": True,
+                "email": email.strip().lower(),
+            },
+        )
+
+    cleaned_email = email.strip().lower()
+
+    user = (
+        db.query(User)
+        .filter(
+            User.email == cleaned_email
+        )
+        .first()
+    )
+
+    if user is not None and user.is_active:
+        raw_token = create_password_reset_token(
+            db,
+            user,
+        )
+
+        reset_url = (
+            f"{config.APP_BASE_URL}"
+            f"/reset-password?token={raw_token}"
+        )
+
+        try:
+            send_password_reset_email(
+                email=user.email,
+                reset_url=reset_url,
+            )
+        except Exception as exc:
+            print(
+                "Password reset email failed:",
+                exc,
+            )
+
+    log_contact_security_event(
+        request,
+        "password_reset_accepted",
+        blocked=False,
+    )
+
+    request.session.pop(
+        "forgot_password_form_loaded_at",
+        None,
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="forgot_password.html",
+        context={
+            "submitted": True,
+            "email": cleaned_email,
+        },
+    )
+
+@router.get(
+    "/reset-password",
+    response_class=HTMLResponse,
+)
+def reset_password_page(
+    request: Request,
+    token: str = "",
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    reset_token = get_valid_password_reset_token(
+        db,
+        token,
+    )
+
+    if reset_token is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="reset_password.html",
+            context={
+                "invalid_token": True,
+            },
+            status_code=400,
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reset_password.html",
+        context={
+            "token": token,
+        },
+    )
+
+
+@router.post(
+    "/reset-password",
+    response_class=HTMLResponse,
+)
+def reset_password(
+    request: Request,
+    token: str = Form(...),
+    password: str = Form(...),
+    password_confirm: str = Form(...),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    reset_token = get_valid_password_reset_token(
+        db,
+        token,
+    )
+
+    if reset_token is None:
+        return templates.TemplateResponse(
+            request=request,
+            name="reset_password.html",
+            context={
+                "invalid_token": True,
+            },
+            status_code=400,
+        )
+
+    if len(password) < 12:
+        return templates.TemplateResponse(
+            request=request,
+            name="reset_password.html",
+            context={
+                "token": token,
+                "error": (
+                    "Password must be at least "
+                    "12 characters."
+                ),
+            },
+            status_code=400,
+        )
+
+    if password != password_confirm:
+        return templates.TemplateResponse(
+            request=request,
+            name="reset_password.html",
+            context={
+                "token": token,
+                "error": "Passwords do not match.",
+            },
+            status_code=400,
+        )
+
+    user = (
+        db.query(User)
+        .filter(
+            User.id == reset_token.user_id
+        )
+        .first()
+    )
+
+    if user is None or not user.is_active:
+        return templates.TemplateResponse(
+            request=request,
+            name="reset_password.html",
+            context={
+                "invalid_token": True,
+            },
+            status_code=400,
+        )
+
+    user.password_hash = hash_password(
+        password
+    )
+
+    db.add(user)
+    db.commit()
+
+    mark_password_reset_token_used(
+        db,
+        reset_token,
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reset_password.html",
+        context={
+            "password_reset": True,
+        },
+    )
 
 @router.get(
     "/login",

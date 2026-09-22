@@ -190,3 +190,41 @@ def send_support_request_email(
     resend.Emails.send(
         params
     )
+
+def send_password_reset_email(
+    *,
+    email: str,
+    reset_url: str,
+) -> None:
+    if not resend.api_key:
+        raise RuntimeError(
+            "RESEND_API_KEY is not configured."
+        )
+
+    params: resend.Emails.SendParams = {
+        "from": (
+            f"PreClear Business "
+            f"<{CONTACT_FROM_EMAIL}>"
+        ),
+        "to": [email],
+        "subject": (
+            "Reset your PreClear Business password"
+        ),
+        "text": (
+            "We received a request to reset your "
+            "PreClear Business password.\n\n"
+            "Use the link below to choose a new "
+            "password:\n\n"
+            f"{reset_url}\n\n"
+            "This link expires in 1 hour and can "
+            "only be used once.\n\n"
+            "If you did not request a password "
+            "reset, you can ignore this email.\n\n"
+            "PreClear Business\n"
+            "Know before you trust."
+        ),
+    }
+
+    resend.Emails.send(
+        params
+    )
