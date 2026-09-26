@@ -9564,3 +9564,19 @@ a.business-governance-stat:hover {
 
     margin-top: 4px;
 }
+
+.business-honeypot {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.evaluation-public-actions {
+    margin-top: 14px;
+}
+
+.business-governance-policy-action {
+    margin-top: 20px;
+}
