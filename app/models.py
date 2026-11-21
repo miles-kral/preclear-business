@@ -483,6 +483,17 @@ class Analysis(Base):
         index=True,
     )
 
+    # What was analyzed: "file", "email", "link" or "qr". Existing rows
+    # default to "file". For non-file analyses, filename holds a short
+    # display label and sha256 the fingerprint of the analyzed content.
+    analysis_type: Mapped[str] = mapped_column(
+        String(20),
+        default="file",
+        server_default="file",
+        nullable=False,
+        index=True,
+    )
+
     source: Mapped[str | None] = mapped_column(
         String(80),
         nullable=True,
@@ -583,6 +594,20 @@ class Analysis(Base):
     reasons: Mapped[str] = mapped_column(
         Text,
         nullable=False,
+    )
+
+    # The full value analyzed when it does not fit in filename, such as
+    # a long URL or an email subject.
+    target: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    # Structured evidence as JSON, such as the links and attachments
+    # found in an email or the payload decoded from a QR code.
+    details_json: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
