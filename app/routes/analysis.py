@@ -9,6 +9,7 @@ from fastapi import (
     Request,
     UploadFile,
 )
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
@@ -29,7 +30,10 @@ from app.models import (
     Organization,
     User,
 )
-from app.services.analysis_service import analyze_file
+from app.services.analysis_service import (
+    MAX_UPLOAD_BYTES,
+    analyze_file,
+)
 from app.plans import get_plan_config, has_subscription_access
 
 
@@ -38,6 +42,67 @@ router = APIRouter()
 templates = Jinja2Templates(
     directory="app/templates",
 )
+
+
+# Must match the <option> values in analyze.html.
+ALLOWED_SOURCES = {
+    "email",
+    "vendor",
+    "customer",
+    "website",
+    "shared",
+    "other",
+}
+
+UPLOAD_READ_CHUNK_BYTES = 1024 * 1024
+
+MAX_UPLOAD_MB = MAX_UPLOAD_BYTES // (1024 * 1024)
+
+# Only these fixed messages can be shown, so nothing from the URL is
+# ever displayed back to the user.
+UPLOAD_ERROR_MESSAGES = {
+    "file_too_large": (
+        f"That file is larger than {MAX_UPLOAD_MB} MB, the most "
+        "PreClear can analyze. Verify it with the sender before "
+        "opening it."
+    ),
+    "empty_file": (
+        "That file is empty, so there was nothing to analyze."
+    ),
+    "invalid_request": (
+        "The analysis request was incomplete. Choose an "
+        "environment and file source, then try again."
+    ),
+}
+
+
+async def read_upload_limited(
+    file: UploadFile,
+    max_bytes: int,
+) -> bytes | None:
+    """
+    Reads an upload in chunks. Returns None as soon as the file passes
+    max_bytes, so an oversized file is never held in memory in full.
+    """
+    chunks: list[bytes] = []
+    total = 0
+
+    while True:
+        chunk = await file.read(
+            UPLOAD_READ_CHUNK_BYTES
+        )
+
+        if not chunk:
+            break
+
+        total += len(chunk)
+
+        if total > max_bytes:
+            return None
+
+        chunks.append(chunk)
+
+    return b"".join(chunks)
 
 def get_analysis_usage_status(
     db: Session,
@@ -186,6 +251,11 @@ def analyze_page(
             "current_membership": current_membership,
             "environments": environments,
             "analysis_usage_status": analysis_usage_status,
+            "upload_error": UPLOAD_ERROR_MESSAGES.get(
+                request.query_params.get("error", "")
+            ),
+            "max_upload_bytes": MAX_UPLOAD_BYTES,
+            "max_upload_mb": MAX_UPLOAD_MB,
         },
     )
 
@@ -233,20 +303,12 @@ async def analyze_file_route(
             status_code=303,
         )
 
-    analysis_usage_status = (
-        get_analysis_usage_status(
-            db,
-            current_organization,
+    # Validate the request before spending any work or API calls on it.
+    if source not in ALLOWED_SOURCES:
+        return RedirectResponse(
+            url="/analyze?error=invalid_request",
+            status_code=303,
         )
-    )
-
-    content = await file.read()
-
-    result = analyze_file(
-        filename=file.filename or "unknown",
-        content=content,
-        content_type=file.content_type,
-    )
 
     environment_record = db.scalar(
         select(Environment).where(
@@ -259,9 +321,45 @@ async def analyze_file_route(
 
     if environment_record is None:
         return RedirectResponse(
-            url="/analyze",
+            url="/analyze?error=invalid_request",
             status_code=303,
         )
+
+    # The allowance is a soft limit: it is recorded and shown as a
+    # warning, but never blocks a scan.
+    analysis_usage_status = (
+        get_analysis_usage_status(
+            db,
+            current_organization,
+        )
+    )
+
+    content = await read_upload_limited(
+        file,
+        MAX_UPLOAD_BYTES,
+    )
+
+    if content is None:
+        return RedirectResponse(
+            url="/analyze?error=file_too_large",
+            status_code=303,
+        )
+
+    if not content:
+        return RedirectResponse(
+            url="/analyze?error=empty_file",
+            status_code=303,
+        )
+
+    # analyze_file hashes the file and calls VirusTotal, both of which
+    # block. Running it in a worker thread keeps the server responsive
+    # for everyone else while it works.
+    result = await run_in_threadpool(
+        analyze_file,
+        filename=file.filename or "unknown",
+        content=content,
+        content_type=file.content_type,
+    )
 
     vt_result = result.get(
         "virustotal",

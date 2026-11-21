@@ -166,12 +166,55 @@ Analyze
             {% endif %}
 
 
+            {% if upload_error %}
+
+                <div
+                    class="business-analysis-allowance business-analysis-allowance--limit"
+                    role="alert"
+                >
+
+                    <div class="business-analysis-allowance__icon">
+
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M12 8v5" />
+                            <path d="M12 17h.01" />
+                        </svg>
+
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            The file could not be analyzed
+                        </strong>
+
+                        <p>
+                            {{ upload_error }}
+                        </p>
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+
             <form
                 id="business-analysis-form"
                 class="business-analyze-form"
                 method="post"
                 action="/analyze"
                 enctype="multipart/form-data"
+                data-max-upload-bytes="{{ max_upload_bytes }}"
+                data-max-upload-mb="{{ max_upload_mb }}"
             >
 
                 <div class="business-analyze-context-grid">

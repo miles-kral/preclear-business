@@ -240,6 +240,29 @@ document.addEventListener(
 
                 event.preventDefault();
 
+                const maxBytes =
+                    Number(form.dataset.maxUploadBytes) || 0;
+
+                if (
+                    maxBytes > 0 &&
+                    input.files[0].size > maxBytes
+                ) {
+                    uploadTitle.textContent =
+                        "File too large to analyze";
+
+                    filename.textContent =
+                        "PreClear can analyze files up to " +
+                        form.dataset.maxUploadMb +
+                        " MB. Verify this file with the sender " +
+                        "before opening it.";
+
+                    uploadZone.classList.remove(
+                        "business-upload-zone--selected"
+                    );
+
+                    return;
+                }
+
                 analyzeButton.disabled = true;
 
                 overlay.hidden = false;
