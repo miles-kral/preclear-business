@@ -34,6 +34,11 @@ from app.services.analysis_service import (
     MAX_UPLOAD_BYTES,
     analyze_file,
 )
+from app.services.link_analysis import (
+    MAX_LINK_LENGTH,
+    InvalidLinkError,
+    analyze_link,
+)
 from app.plans import get_plan_config, has_subscription_access
 
 
@@ -54,6 +59,15 @@ ALLOWED_SOURCES = {
     "other",
 }
 
+ALLOWED_LINK_SOURCES = {
+    "email",
+    "text_message",
+    "chat",
+    "website",
+    "document",
+    "other",
+}
+
 UPLOAD_READ_CHUNK_BYTES = 1024 * 1024
 
 MAX_UPLOAD_MB = MAX_UPLOAD_BYTES // (1024 * 1024)
@@ -71,7 +85,22 @@ UPLOAD_ERROR_MESSAGES = {
     ),
     "invalid_request": (
         "The analysis request was incomplete. Choose an "
-        "environment and file source, then try again."
+        "environment and source, then try again."
+    ),
+}
+
+LINK_ERROR_MESSAGES = {
+    "invalid_link": (
+        "That doesn't look like a link PreClear can check. Paste the "
+        "full address, for example https://example.com/page."
+    ),
+    "link_too_long": (
+        "That link is too long for PreClear to check. Verify it with "
+        "the sender before visiting it."
+    ),
+    "invalid_link_request": (
+        "The link check was incomplete. Choose an environment and "
+        "link source, then try again."
     ),
 }
 
@@ -254,29 +283,21 @@ def analyze_page(
             "upload_error": UPLOAD_ERROR_MESSAGES.get(
                 request.query_params.get("error", "")
             ),
+            "link_error": LINK_ERROR_MESSAGES.get(
+                request.query_params.get("error", "")
+            ),
             "max_upload_bytes": MAX_UPLOAD_BYTES,
             "max_upload_mb": MAX_UPLOAD_MB,
         },
     )
 
 
-@router.post("/analyze")
-async def analyze_file_route(
-    request: Request,
-    file: UploadFile = File(...),
-    environment: int = Form(...),
-    source: str = Form(...),
-    db: Session = Depends(get_db),
-    current_user: User | None = Depends(
-        get_current_user
-    ),
-    current_organization: Organization | None = Depends(
-        get_current_organization
-    ),
-    current_membership: Membership | None = Depends(
-        get_current_membership
-    ),
-):
+def _access_redirect(
+    current_user: User | None,
+    current_organization: Organization | None,
+    current_membership: Membership | None,
+) -> RedirectResponse | None:
+    """Returns a redirect if the user may not run analyses, else None."""
     if (
         current_user is None
         or current_organization is None
@@ -303,6 +324,145 @@ async def analyze_file_route(
             status_code=303,
         )
 
+    return None
+
+
+def _get_environment(
+    db: Session,
+    organization: Organization,
+    environment_id: int,
+) -> Environment | None:
+    return db.scalar(
+        select(Environment).where(
+            Environment.id == environment_id,
+            Environment.organization_id
+            == organization.id,
+            Environment.is_active.is_(True),
+        )
+    )
+
+
+def _record_analysis(
+    db: Session,
+    *,
+    organization: Organization,
+    user: User,
+    environment: Environment,
+    source: str,
+    result: dict,
+    analysis_type: str,
+    usage_status: dict,
+    event_type: str,
+    description: str,
+) -> Analysis:
+    """Saves an analysis and its audit event."""
+    vt_result = result.get(
+        "virustotal",
+        {},
+    )
+
+    analysis = Analysis(
+        organization_id=organization.id,
+        user_id=user.id,
+        environment_id=environment.id,
+        analysis_type=analysis_type,
+        source=source,
+        filename=result["filename"],
+        extension=result["extension"],
+        mime_type=result["mime_type"],
+        file_size=result["file_size"],
+        sha256=result["sha256"],
+        target=result.get("target"),
+        details_json=result.get("details_json"),
+        virustotal_found=(
+            vt_result.get("found")
+            if vt_result.get("available")
+            else None
+        ),
+        virustotal_malicious=(
+            vt_result.get("malicious")
+        ),
+        virustotal_suspicious=(
+            vt_result.get("suspicious")
+        ),
+        virustotal_undetected=(
+            vt_result.get("undetected")
+        ),
+        virustotal_harmless=(
+            vt_result.get("harmless")
+        ),
+        virustotal_error=(
+            vt_result.get("error")
+        ),
+        risk_level=result["risk_level"],
+        decision=result["decision"],
+        explanation=result["explanation"],
+        reasons=json.dumps(
+            result["reasons"]
+        ),
+    )
+
+    db.add(analysis)
+    db.flush()
+
+    audit_event = AuditEvent(
+        organization_id=organization.id,
+        user_id=user.id,
+        event_type=event_type,
+        description=description,
+        metadata_json=json.dumps(
+            {
+                "analysis_id": analysis.id,
+                "analysis_type": analysis_type,
+                "decision": result["decision"],
+                "risk_level": result["risk_level"],
+                "environment": environment.name,
+                "source": source,
+                "usage_status": (
+                    usage_status["status"]
+                ),
+                "usage_before_analysis": (
+                    usage_status["usage"]
+                ),
+                "analysis_limit": (
+                    usage_status["limit"]
+                ),
+            }
+        ),
+    )
+
+    db.add(audit_event)
+    db.commit()
+
+    return analysis
+
+
+@router.post("/analyze")
+async def analyze_file_route(
+    request: Request,
+    file: UploadFile = File(...),
+    environment: int = Form(...),
+    source: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(
+        get_current_user
+    ),
+    current_organization: Organization | None = Depends(
+        get_current_organization
+    ),
+    current_membership: Membership | None = Depends(
+        get_current_membership
+    ),
+):
+    redirect = _access_redirect(
+        current_user,
+        current_organization,
+        current_membership,
+    )
+
+    if redirect is not None:
+        return redirect
+
     # Validate the request before spending any work or API calls on it.
     if source not in ALLOWED_SOURCES:
         return RedirectResponse(
@@ -310,13 +470,10 @@ async def analyze_file_route(
             status_code=303,
         )
 
-    environment_record = db.scalar(
-        select(Environment).where(
-            Environment.id == environment,
-            Environment.organization_id
-            == current_organization.id,
-            Environment.is_active.is_(True),
-        )
+    environment_record = _get_environment(
+        db,
+        current_organization,
+        environment,
     )
 
     if environment_record is None:
@@ -361,87 +518,120 @@ async def analyze_file_route(
         content_type=file.content_type,
     )
 
-    vt_result = result.get(
-        "virustotal",
-        {},
-    )
-
-    analysis = Analysis(
-        organization_id=current_organization.id,
-        user_id=current_user.id,
-        environment_id=environment_record.id,
+    analysis = _record_analysis(
+        db,
+        organization=current_organization,
+        user=current_user,
+        environment=environment_record,
         source=source,
-        filename=result["filename"],
-        extension=result["extension"],
-        mime_type=result["mime_type"],
-        file_size=result["file_size"],
-        sha256=result["sha256"],
-        virustotal_found=(
-            vt_result.get("found")
-            if vt_result.get("available")
-            else None
-        ),
-        virustotal_malicious=(
-            vt_result.get("malicious")
-        ),
-        virustotal_suspicious=(
-            vt_result.get("suspicious")
-        ),
-        virustotal_undetected=(
-            vt_result.get("undetected")
-        ),
-        virustotal_harmless=(
-            vt_result.get("harmless")
-        ),
-        virustotal_error=(
-            vt_result.get("error")
-        ),
-        risk_level=result["risk_level"],
-        decision=result["decision"],
-        explanation=result["explanation"],
-        reasons=json.dumps(
-            result["reasons"]
-        ),
-    )
-
-    db.add(analysis)
-    db.flush()
-
-    audit_event = AuditEvent(
-        organization_id=current_organization.id,
-        user_id=current_user.id,
+        result=result,
+        analysis_type="file",
+        usage_status=analysis_usage_status,
         event_type="file_analysis",
         description=(
             f"{current_user.name} analyzed "
             f"{result['filename']}."
         ),
-        metadata_json=json.dumps(
-            {
-                "analysis_id": analysis.id,
-                "decision": result["decision"],
-                "risk_level": result["risk_level"],
-                "environment": environment_record.name,
-                "source": source,
-                "usage_status": (
-                    analysis_usage_status["status"]
-                ),
-                "usage_before_analysis": (
-                    analysis_usage_status["usage"]
-                ),
-                "analysis_limit": (
-                    analysis_usage_status["limit"]
-                ),
-            }
-        ),
     )
-
-    db.add(audit_event)
-    db.commit()
 
     return RedirectResponse(
         url=f"/analysis/{analysis.id}",
         status_code=303,
     )
+
+
+@router.post("/analyze/link")
+async def analyze_link_route(
+    request: Request,
+    url: str = Form(...),
+    environment: int = Form(...),
+    source: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(
+        get_current_user
+    ),
+    current_organization: Organization | None = Depends(
+        get_current_organization
+    ),
+    current_membership: Membership | None = Depends(
+        get_current_membership
+    ),
+):
+    redirect = _access_redirect(
+        current_user,
+        current_organization,
+        current_membership,
+    )
+
+    if redirect is not None:
+        return redirect
+
+    if source not in ALLOWED_LINK_SOURCES:
+        return RedirectResponse(
+            url="/analyze?error=invalid_link_request#check-link",
+            status_code=303,
+        )
+
+    if len(url) > MAX_LINK_LENGTH:
+        return RedirectResponse(
+            url="/analyze?error=link_too_long#check-link",
+            status_code=303,
+        )
+
+    environment_record = _get_environment(
+        db,
+        current_organization,
+        environment,
+    )
+
+    if environment_record is None:
+        return RedirectResponse(
+            url="/analyze?error=invalid_link_request#check-link",
+            status_code=303,
+        )
+
+    analysis_usage_status = (
+        get_analysis_usage_status(
+            db,
+            current_organization,
+        )
+    )
+
+    # PreClear never visits the link. analyze_link only inspects the
+    # address and may look up the host's reputation on VirusTotal.
+    try:
+        result = await run_in_threadpool(
+            analyze_link,
+            url,
+        )
+
+    except InvalidLinkError:
+        return RedirectResponse(
+            url="/analyze?error=invalid_link#check-link",
+            status_code=303,
+        )
+
+    analysis = _record_analysis(
+        db,
+        organization=current_organization,
+        user=current_user,
+        environment=environment_record,
+        source=source,
+        result=result,
+        analysis_type="link",
+        usage_status=analysis_usage_status,
+        event_type="link_analysis",
+        description=(
+            f"{current_user.name} checked a link to "
+            f"{(result['details'].get('inner') or result['details']).get('host') or result['filename']}."
+        ),
+    )
+
+    return RedirectResponse(
+        url=f"/analysis/{analysis.id}",
+        status_code=303,
+    )
+
 
 @router.get(
     "/analysis/{analysis_id}",
@@ -489,6 +679,13 @@ def analysis_result_page(
         analysis.reasons
     )
 
+    try:
+        details = json.loads(
+            analysis.details_json or "{}"
+        )
+    except ValueError:
+        details = {}
+
     return templates.TemplateResponse(
         request=request,
         name="analysis_result.html",
@@ -499,5 +696,6 @@ def analysis_result_page(
             "current_membership": current_membership,
             "analysis": analysis,
             "reasons": reasons,
+            "details": details,
         },
     )

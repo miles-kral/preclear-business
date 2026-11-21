@@ -10,6 +10,15 @@ Evidence Record
 
 {% block content %}
 
+{% set is_link = analysis.analysis_type == "link" %}
+
+{% if is_link %}
+    <link
+        rel="stylesheet"
+        href="/static/css/link-analysis.css"
+    >
+{% endif %}
+
 <section class="business-record-header">
 
     <div>
@@ -72,6 +81,8 @@ Evidence Record
                     Looks Safe
                 {% elif analysis.decision == "USE_CAUTION" %}
                     Use Caution
+                {% elif is_link %}
+                    Do Not Visit
                 {% else %}
                     Do Not Open
                 {% endif %}
@@ -154,6 +165,10 @@ Evidence Record
             <p>
                 External reputation intelligence preserved
                 with this Evidence Record.
+                {% if is_link %}
+                    Only the link's domain was looked up,
+                    never the full link.
+                {% endif %}
             </p>
 
         </div>
@@ -286,7 +301,7 @@ Evidence Record
                     {% if analysis.virustotal_malicious and analysis.virustotal_malicious > 0 %}
 
                         <p>
-                            VirusTotal recognized this SHA-256 fingerprint
+                            VirusTotal recognized this {{ "domain" if is_link else "SHA-256 fingerprint" }}
                             and reported malicious detections from
                             participating security engines.
                         </p>
@@ -294,7 +309,7 @@ Evidence Record
                     {% elif analysis.virustotal_suspicious and analysis.virustotal_suspicious > 0 %}
 
                         <p>
-                            VirusTotal recognized this SHA-256 fingerprint
+                            VirusTotal recognized this {{ "domain" if is_link else "SHA-256 fingerprint" }}
                             and reported suspicious detections that
                             contributed to PreClear's Trust Decision.
                         </p>
@@ -302,7 +317,7 @@ Evidence Record
                     {% else %}
 
                         <p>
-                            VirusTotal recognized this file fingerprint
+                            VirusTotal recognized this {{ "domain" if is_link else "file fingerprint" }}
                             and reported no malicious or suspicious
                             detections in the latest available analysis.
                         </p>
@@ -312,7 +327,7 @@ Evidence Record
                 {% else %}
 
                     <p>
-                        This SHA-256 fingerprint was not found in
+                        This {{ "domain" if is_link else "SHA-256 fingerprint" }} was not found in
                         VirusTotal's available threat intelligence.
                         PreClear's Trust Decision is based on the other
                         security indicators identified during analysis.
@@ -332,15 +347,7 @@ Evidence Record
         <div class="business-result-section__header">
 
             <h3>
-                File evidence
-            </h3>
-
-    <section class="business-result-section">
-
-        <div class="business-result-section__header">
-
-            <h3>
-                File Evidence
+                {{ "Link Evidence" if is_link else "File Evidence" }}
             </h3>
 
             <p>
@@ -353,6 +360,41 @@ Evidence Record
 
         <div class="business-result-details">
 
+            {% if is_link %}
+            <div>
+                <span>
+                    Analysis type
+                </span>
+                <strong>
+                    Link
+                </strong>
+            </div>
+            <div>
+                <span>
+                    Domain
+                </span>
+                <strong>
+                    {{ (details.inner or details).registered_domain
+                       or (details.inner or details).host
+                       or "Not applicable" }}
+                </strong>
+            </div>
+            <div>
+                <span>
+                    Connection
+                </span>
+                <strong>
+                    {% set scheme = (details.inner or details).scheme %}
+                    {% if scheme == "https" %}
+                        Encrypted (https)
+                    {% elif scheme == "http" %}
+                        Not encrypted (http)
+                    {% else %}
+                        {{ scheme or "Unknown" }}
+                    {% endif %}
+                </strong>
+            </div>
+            {% else %}
             <div>
                 <span>
                     File type
@@ -385,6 +427,8 @@ Evidence Record
                 </strong>
             </div>
 
+
+            {% endif %}
 
             <div>
                 <span>
@@ -434,6 +478,40 @@ Evidence Record
         </div>
 
     </section>
+
+
+    {% if is_link and analysis.target %}
+        <section class="business-result-section">
+            <div class="business-result-section__header">
+                <h3>
+                    Address Checked
+                </h3>
+                <p>
+                    The full link as PreClear inspected it. It is shown
+                    as text so it can't be clicked by accident.
+                </p>
+            </div>
+            <div class="business-result-hash business-result-target">
+                <span>
+                    Full address
+                </span>
+                <code>
+                    {{ analysis.target }}
+                </code>
+            </div>
+            {% if details.inner %}
+                <div class="business-result-hash business-result-target">
+                    <span>
+                        Original destination inside the
+                        {{ details.unwrapped_from }} link
+                    </span>
+                    <code>
+                        {{ details.inner.link }}
+                    </code>
+                </div>
+            {% endif %}
+        </section>
+    {% endif %}
 
 
     <section class="business-result-section">
@@ -492,7 +570,7 @@ Evidence Record
         <div class="business-result-hash">
 
             <span>
-                SHA-256 fingerprint
+                SHA-256 fingerprint{{ " of the address" if is_link else "" }}
             </span>
 
             <code>
@@ -679,9 +757,9 @@ Evidence Record
         {% if current_membership.role in ["owner", "admin", "analyst"] %}
             <a
                 class="button button--outline"
-                href="/analyze"
+                href="/analyze{{ '#check-link' if is_link else '' }}"
             >
-                Analyze Another File
+                {{ "Check Another Link" if is_link else "Analyze Another File" }}
             </a>
         {% endif %}
 

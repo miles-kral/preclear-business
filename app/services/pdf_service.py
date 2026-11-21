@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
+from xml.sax.saxutils import escape as _xml_escape
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT
@@ -97,9 +98,64 @@ def _format_datetime(
     )
 
 
+def _safe(
+    value,
+) -> str:
+    """
+    Escapes text for a ReportLab Paragraph. Paragraph text is markup, so
+    an unescaped file name, link or note could change the PDF's content
+    (for example with <font> tags) or make ReportLab try to load a file
+    from the server (with an <img> tag). Every value that comes from a
+    user, a file or a link must pass through here.
+    """
+    return _xml_escape(
+        "" if value is None else str(value)
+    )
+
+
+def _load_details(
+    analysis,
+) -> dict:
+    try:
+        details = json.loads(
+            getattr(analysis, "details_json", None) or "{}"
+        )
+    except (TypeError, ValueError):
+        return {}
+
+    return details if isinstance(details, dict) else {}
+
+
+def _fit_style(
+    text,
+    base_style,
+):
+    """
+    Returns a style that wraps at any character when the text has a very
+    long unbroken run (such as a link), so it can't overflow its column.
+    """
+    longest = max(
+        (len(part) for part in str(text or "").split()),
+        default=0,
+    )
+
+    if longest <= 24:
+        return base_style
+
+    return ParagraphStyle(
+        f"{base_style.name}Wrap",
+        parent=base_style,
+        wordWrap="CJK",
+    )
+
+
 def _decision_label(
     decision: str,
+    analysis_type: str | None = None,
 ) -> str:
+    if decision == "DO_NOT_OPEN" and analysis_type == "link":
+        return "Do Not Visit"
+
     labels = {
         "LOOKS_SAFE": "Looks Safe",
         "USE_CAUTION": "Use Caution",
@@ -303,7 +359,7 @@ def _field_table(
                     styles["label"],
                 ),
                 Paragraph(
-                    str(value),
+                    _safe(value),
                     styles["body"],
                 ),
             ]
@@ -384,6 +440,14 @@ def build_evidence_record_pdf(
     organization,
     reviewed_by_user=None,
 ) -> bytes:
+    is_link = (
+        getattr(analysis, "analysis_type", "file") == "link"
+    )
+
+    details = _load_details(analysis)
+
+    link_info = details.get("inner") or details
+
     buffer = BytesIO()
 
     document = SimpleDocTemplate(
@@ -537,7 +601,7 @@ def build_evidence_record_pdf(
             [
                 Paragraph(
                     (
-                        f"<b>{_decision_label(analysis.decision)}</b>"
+                        f"<b>{_decision_label(analysis.decision, getattr(analysis, 'analysis_type', None))}</b>"
                     ),
                     styles["body"],
                 ),
@@ -661,7 +725,7 @@ def build_evidence_record_pdf(
                     organization.name,
                 ),
                 (
-                    "Filename",
+                    "Link" if is_link else "Filename",
                     analysis.filename,
                 ),
                 (
@@ -718,7 +782,7 @@ def build_evidence_record_pdf(
 
     story.append(
         Paragraph(
-            analysis.explanation,
+            _safe(analysis.explanation),
             styles["body"],
         )
     )
@@ -745,7 +809,7 @@ def build_evidence_record_pdf(
     for reason in reasons:
         story.append(
             Paragraph(
-                f"• {reason}",
+                f"• {_safe(reason)}",
                 styles["body"],
             )
         )
@@ -774,6 +838,10 @@ def build_evidence_record_pdf(
             "Threat Intelligence",
             styles["section"],
         )
+    )
+
+    vt_subject = (
+        "domain" if is_link else "SHA-256 fingerprint"
     )
 
     if analysis.virustotal_found is None:
@@ -819,8 +887,8 @@ def build_evidence_record_pdf(
             )
 
             reputation_text = (
-                "VirusTotal recognized this SHA-256 "
-                "fingerprint and reported malicious "
+                f"VirusTotal recognized this {vt_subject} "
+                "and reported malicious "
                 "detections from participating security "
                 "engines."
             )
@@ -832,8 +900,8 @@ def build_evidence_record_pdf(
             )
 
             reputation_text = (
-                "VirusTotal recognized this SHA-256 "
-                "fingerprint and reported suspicious "
+                f"VirusTotal recognized this {vt_subject} "
+                "and reported suspicious "
                 "detections that contributed to "
                 "PreClear's Trust Decision."
             )
@@ -845,8 +913,9 @@ def build_evidence_record_pdf(
             )
 
             reputation_text = (
-                "VirusTotal recognized this file "
-                "fingerprint and reported no malicious "
+                "VirusTotal recognized this "
+                + ("domain" if is_link else "file fingerprint")
+                + " and reported no malicious "
                 "or suspicious detections in the latest "
                 "available analysis."
             )
@@ -858,7 +927,7 @@ def build_evidence_record_pdf(
         )
 
         reputation_text = (
-            "This SHA-256 fingerprint was not found in "
+            f"This {vt_subject} was not found in "
             "VirusTotal's available threat intelligence. "
             "PreClear's Trust Decision is based on the "
             "other security indicators identified during "
@@ -999,6 +1068,12 @@ def build_evidence_record_pdf(
         )
     )
 
+    if is_link:
+        reputation_text += (
+            " Only the link's domain was looked up, "
+            "never the full link."
+        )
+
     story.append(
         Paragraph(
             reputation_text,
@@ -1016,32 +1091,176 @@ def build_evidence_record_pdf(
 
     story.append(
         Paragraph(
-            "File Evidence",
+            "Link Evidence" if is_link else "File Evidence",
             styles["section"],
         )
     )
 
-    story.append(
-        _field_table(
+    if is_link:
+
+        scheme = link_info.get("scheme")
+
+        connection = {
+            "https": "Encrypted (https)",
+            "http": "Not encrypted (http)",
+        }.get(scheme, scheme or "Unknown")
+
+        link_rows = [
+            (
+                "Analysis Type",
+                "Link",
+            ),
+            (
+                "Domain",
+                link_info.get("registered_domain")
+                or link_info.get("host")
+                or "Not applicable",
+            ),
+            (
+                "Connection",
+                connection,
+            ),
+        ]
+
+        if details.get("unwrapped_from"):
+            link_rows.append(
+                (
+                    "Rewritten By",
+                    details["unwrapped_from"],
+                )
+            )
+
+        story.append(
+            _field_table(
+                link_rows,
+                styles,
+            )
+        )
+
+        # Long addresses have no spaces, so this style lets them wrap
+        # at any character instead of running off the page.
+        address_style = ParagraphStyle(
+            "PreClearAddress",
+            parent=styles["hash"],
+            wordWrap="CJK",
+        )
+
+        address_rows = [
             [
-                (
-                    "Extension",
-                    analysis.extension
-                    or "Unknown",
-                ),
-                (
-                    "MIME Type",
-                    analysis.mime_type
-                    or "Unknown",
-                ),
-                (
-                    "File Size",
-                    f"{analysis.file_size:,} bytes",
+                Paragraph(
+                    "FULL ADDRESS (SHOWN AS TEXT, NOT A LINK)",
+                    styles["label"],
                 ),
             ],
-            styles,
+            [
+                Paragraph(
+                    _safe(analysis.target or analysis.filename),
+                    address_style,
+                ),
+            ],
+        ]
+
+        if details.get("inner"):
+            address_rows += [
+                [
+                    Paragraph(
+                        "ORIGINAL DESTINATION INSIDE THE REWRITTEN LINK",
+                        styles["label"],
+                    ),
+                ],
+                [
+                    Paragraph(
+                        _safe(details["inner"].get("link")),
+                        address_style,
+                    ),
+                ],
+            ]
+
+        address_table = Table(
+            address_rows,
+            colWidths=[
+                6.3 * inch,
+            ],
         )
-    )
+
+        address_table.setStyle(
+            TableStyle(
+                [
+                    (
+                        "BACKGROUND",
+                        (0, 0),
+                        (-1, -1),
+                        SURFACE,
+                    ),
+                    (
+                        "BOX",
+                        (0, 0),
+                        (-1, -1),
+                        0.6,
+                        BORDER,
+                    ),
+                    (
+                        "LEFTPADDING",
+                        (0, 0),
+                        (-1, -1),
+                        9,
+                    ),
+                    (
+                        "RIGHTPADDING",
+                        (0, 0),
+                        (-1, -1),
+                        9,
+                    ),
+                    (
+                        "TOPPADDING",
+                        (0, 0),
+                        (-1, -1),
+                        6,
+                    ),
+                    (
+                        "BOTTOMPADDING",
+                        (0, 0),
+                        (-1, -1),
+                        6,
+                    ),
+                ]
+            )
+        )
+
+        story.append(
+            Spacer(
+                1,
+                12,
+            )
+        )
+
+        story.append(
+            address_table
+        )
+
+    else:
+
+        story.append(
+            _field_table(
+                [
+                    (
+                        "Extension",
+                        analysis.extension
+                        or "Unknown",
+                    ),
+                    (
+                        "MIME Type",
+                        analysis.mime_type
+                        or "Unknown",
+                    ),
+                    (
+                        "File Size",
+                        f"{analysis.file_size:,} bytes",
+                    ),
+                ],
+                styles,
+            )
+        )
 
     story.append(
         Spacer(
@@ -1054,13 +1273,15 @@ def build_evidence_record_pdf(
         [
             [
                 Paragraph(
-                    "SHA-256 FINGERPRINT",
+                    "SHA-256 FINGERPRINT OF THE ADDRESS"
+                    if is_link
+                    else "SHA-256 FINGERPRINT",
                     styles["label"],
                 ),
             ],
             [
                 Paragraph(
-                    analysis.sha256,
+                    _safe(analysis.sha256),
                     styles["hash"],
                 ),
             ],
@@ -1199,7 +1420,7 @@ def build_evidence_record_pdf(
                         5,
                     ),
                     Paragraph(
-                        analysis.resolution_note,
+                        _safe(analysis.resolution_note),
                         styles["body"],
                     ),
                 ]
@@ -1347,7 +1568,7 @@ def build_decision_ledger_pdf(
     story.append(
         Paragraph(
             (
-                f"{organization.name} · "
+                f"{_safe(organization.name)} · "
                 "Trust Decision and Evidence Record history."
             ),
             styles["subtitle"],
@@ -1577,11 +1798,14 @@ def build_decision_ledger_pdf(
         table_rows.append(
             [
                 Paragraph(
-                    analysis.filename,
-                    styles["small"],
+                    _safe(analysis.filename),
+                    _fit_style(
+                        analysis.filename,
+                        styles["small"],
+                    ),
                 ),
                 Paragraph(
-                    (
+                    _safe(
                         analysis.environment.name
                         if analysis.environment
                         else "—"
@@ -1589,7 +1813,7 @@ def build_decision_ledger_pdf(
                     styles["small"],
                 ),
                 Paragraph(
-                    (
+                    _safe(
                         analysis.user.name
                         if analysis.user
                         else "System"
@@ -1610,7 +1834,8 @@ def build_decision_ledger_pdf(
                 ),
                 Paragraph(
                     _decision_label(
-                        analysis.decision
+                        analysis.decision,
+                        getattr(analysis, "analysis_type", None),
                     ),
                     styles["small"],
                 ),
@@ -1836,7 +2061,7 @@ def build_activity_log_pdf(
     story.append(
         Paragraph(
             (
-                f"{organization.name} · "
+                f"{_safe(organization.name)} · "
                 "Security, governance, and administrative activity."
             ),
             styles["subtitle"],
@@ -1889,7 +2114,7 @@ def build_activity_log_pdf(
 
     story.append(
         Paragraph(
-            filter_text,
+            _safe(filter_text),
             styles["small"],
         )
     )
@@ -1955,16 +2180,19 @@ def build_activity_log_pdf(
                     styles["small"],
                 ),
                 Paragraph(
-                    actor,
+                    _safe(actor),
                     styles["small"],
                 ),
                 Paragraph(
-                    event_type,
+                    _safe(event_type),
                     styles["small"],
                 ),
                 Paragraph(
-                    event.description,
-                    styles["small"],
+                    _safe(event.description),
+                    _fit_style(
+                        event.description,
+                        styles["small"],
+                    ),
                 ),
             ]
         )
@@ -2201,7 +2429,7 @@ def build_security_summary_pdf(
     story.append(
         Paragraph(
             (
-                f"{organization.name} - "
+                f"{_safe(organization.name)} - "
                 "Trust Decision, evidence, and "
                 "organizational security activity."
             ),
@@ -2562,7 +2790,7 @@ def build_security_summary_pdf(
             environment_rows.append(
                 [
                     Paragraph(
-                        item["environment"].name,
+                        _safe(item["environment"].name),
                         styles["body"],
                     ),
                     Paragraph(
@@ -2697,15 +2925,15 @@ def build_security_summary_pdf(
     if total_analyses == 0:
 
         summary_text = (
-            "No file analyses were recorded during "
+            "No analyses were recorded during "
             "the reporting period."
         )
 
     elif attention_count == 0:
 
         summary_text = (
-            f"PreClear analyzed {total_analyses} "
-            "files during the reporting period. "
+            f"PreClear completed {total_analyses} "
+            "analyses during the reporting period. "
             "No Trust Decisions required additional "
             "attention."
         )
@@ -2713,8 +2941,8 @@ def build_security_summary_pdf(
     else:
 
         summary_text = (
-            f"PreClear analyzed {total_analyses} "
-            "files during the reporting period. "
+            f"PreClear completed {total_analyses} "
+            "analyses during the reporting period. "
             f"{attention_count} "
             + (
                 "analysis required"

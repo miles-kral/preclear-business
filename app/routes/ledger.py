@@ -367,6 +367,16 @@ def evidence_record(
             analysis.reasons
         ]
 
+    try:
+        details = json.loads(
+            analysis.details_json or "{}"
+        )
+    except (
+        TypeError,
+        json.JSONDecodeError,
+    ):
+        details = {}
+
     return templates.TemplateResponse(
         request=request,
         name="evidence_record.html",
@@ -377,6 +387,7 @@ def evidence_record(
             "current_membership": current_membership,
             "analysis": analysis,
             "reasons": reasons,
+            "details": details,
             "reviewed_by_user": reviewed_by_user,
             "reviewed_display_time": reviewed_display_time,
         },
@@ -694,4 +705,3 @@ def resolve_evidence_record(
         url=f"/ledger/{analysis.id}",
         status_code=303,
     )
-
