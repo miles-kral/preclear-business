@@ -5,9 +5,9 @@ PreClear Business — Know Before You Trust
 {% endblock %}
 
 {% block meta_description %}
-PreClear Business helps organizations evaluate external files
-before internal access while creating the reporting and evidence
-needed for security and governance.
+PreClear Business checks outside files, links, emails and QR codes
+before your team trusts them, and records the evidence behind every
+decision for reporting and governance.
 {% endblock %}
 
 {% block structured_data %}
@@ -18,7 +18,7 @@ needed for security and governance.
     "name": "PreClear Business",
     "applicationCategory": "SecurityApplication",
     "operatingSystem": "Web",
-    "description": "PreClear Business helps organizations inspect external files before internal access and maintain auditable evidence behind every trust decision.",
+    "description": "PreClear Business checks outside files, links, emails and QR codes before employees trust them, and maintains auditable evidence behind every trust decision.",
     "url": "{{ canonical_url }}"
 }
 </script>
@@ -26,6 +26,11 @@ needed for security and governance.
 
 
 {% block content %}
+
+<link
+    rel="stylesheet"
+    href="/static/css/home-checks.css"
+>
 
 
 <section class="hero">
@@ -42,31 +47,32 @@ needed for security and governance.
 
         <p class="lead">
             Give your organization a clear trust decision before
-            unfamiliar files reach your people and systems.
-            PreClear evaluates the file, explains the evidence,
-            and records the decision for reporting and governance.
+            unfamiliar files, links, emails and QR codes reach your
+            people and systems. PreClear checks what arrived,
+            explains the evidence, and records the decision for
+            reporting and governance.
         </p>
 
         <div class="hero-actions">
 
             <a
-                class="button"
+                class="button button--primary"
                 href="/pricing"
             >
                 Start Small Business
             </a>
 
             <a
-                class="button"
-                href="#how"
+                class="button button--outline"
+                href="#checks"
             >
-                See how it works
+                See what it checks
             </a>
 
         </div>
 
         <p class="business-hero-note">
-            Built for teams handling external files every day.
+            Built for teams handling outside files, links and email every day.
         </p>
 
     </div>
@@ -84,9 +90,9 @@ needed for security and governance.
 
         <p>
             Your employees should not have to guess whether an
-            unfamiliar file deserves their trust. PreClear creates
-            a controlled decision before access—and an auditable
-            record after it.
+            unfamiliar file, link or email deserves their trust.
+            PreClear creates a controlled decision before access—and
+            an auditable record after it.
         </p>
 
     </div>
@@ -107,14 +113,14 @@ needed for security and governance.
         </span>
 
         <h2>
-            Protect the point where outside files enter your business.
+            Protect the points where outside content enters your business.
         </h2>
 
         <p>
-            Resumes, contracts, invoices, customer uploads, and vendor
-            documents arrive from outside your environment every day.
-            PreClear gives your organization a consistent way to
-            evaluate them before internal access.
+            Resumes, invoices, vendor emails, payment links, and QR codes
+            on letters and flyers arrive from outside your environment
+            every day. PreClear gives your organization a consistent way
+            to evaluate them before anyone opens, clicks, pays or scans.
         </p>
 
     </div>
@@ -239,6 +245,224 @@ needed for security and governance.
 
 
 <section
+    class="home-checks"
+    id="checks"
+>
+
+    <div class="section-heading">
+
+        <span class="eyebrow">
+            What PreClear checks
+        </span>
+
+        <h2>
+            One trust decision for everything that arrives.
+        </h2>
+
+        <p>
+            Files, links, emails and QR codes each get their own checks,
+            and every result is recorded the same way in your Decision
+            Ledger.
+        </p>
+
+    </div>
+
+
+    <div class="home-checks-grid">
+
+        <article class="home-check-card">
+
+            <span class="home-check-card__icon">
+                <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <path d="M6 2h8l4 4v16H6z" />
+                    <path d="M14 2v5h5" />
+                </svg>
+            </span>
+
+            <h3>
+                Files
+            </h3>
+
+            <p>
+                Attachments, downloads and uploads are inspected
+                for what they really are, not just what they're
+                called.
+            </p>
+
+            <ul>
+                <li>Programs disguised as documents</li>
+                <li>Macro-enabled and password-locked files</li>
+                <li>Threat intelligence by file fingerprint</li>
+            </ul>
+
+        </article>
+
+
+        <article class="home-check-card">
+
+            <span class="home-check-card__icon">
+                <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
+                    <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
+                </svg>
+            </span>
+
+            <h3>
+                Links
+            </h3>
+
+            <p>
+                Paste a link from an email, text or chat. PreClear
+                reads the address and shows who really owns it.
+            </p>
+
+            <ul>
+                <li>Lookalike domains imitating brands</li>
+                <li>Shortened and hidden destinations</li>
+                <li>Security-rewritten links unwrapped</li>
+            </ul>
+
+        </article>
+
+
+        <article class="home-check-card">
+
+            <span class="home-check-card__icon">
+                <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                    <path d="m3 7 9 6 9-6" />
+                </svg>
+            </span>
+
+            <h3>
+                Emails
+            </h3>
+
+            <p>
+                Upload a saved email to check the sender, what the
+                message asks for, and everything inside it.
+            </p>
+
+            <ul>
+                <li>Spoofed senders and mismatched reply addresses</li>
+                <li>Changed bank details and gift card requests</li>
+                <li>Every link and attachment, checked together</li>
+            </ul>
+
+        </article>
+
+
+        <article class="home-check-card">
+
+            <span class="home-check-card__icon">
+                <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3" />
+                </svg>
+            </span>
+
+            <h3>
+                QR Codes
+            </h3>
+
+            <p>
+                Take a photo with your phone through PreClear, or
+                upload an image or PDF. See where a code leads before
+                you scan it.
+            </p>
+
+            <ul>
+                <li>Payment and parking-sign scams</li>
+                <li>Codes hidden in emails and PDF invoices</li>
+                <li>Wi-Fi, payment and account-setup codes explained</li>
+            </ul>
+
+        </article>
+
+    </div>
+
+
+    <div class="home-assurance">
+
+        <div>
+            <strong>
+                Links are never visited
+            </strong>
+            <span>
+                PreClear checks every address without opening it, so
+                nothing on the other end knows it was examined.
+            </span>
+        </div>
+
+        <div>
+            <strong>
+                Less data kept
+            </strong>
+            <span>
+                Email body text isn't stored, and Wi-Fi passwords or
+                account keys in QR codes are removed before anything
+                is recorded.
+            </span>
+        </div>
+
+        <div>
+            <strong>
+                Evidence you can show
+            </strong>
+            <span>
+                Every check produces an Evidence Record with the
+                reasons behind the decision, ready to export as a PDF.
+            </span>
+        </div>
+
+    </div>
+
+
+    <p class="checker-disclaimer">
+        PreClear provides decision support, not a guarantee that a
+        file, link, email or QR code is safe. When something asks you
+        to act, confirm it another way.
+    </p>
+
+</section>
+
+
+
+<section
     class="how"
     id="how"
 >
@@ -269,8 +493,8 @@ needed for security and governance.
             </h3>
 
             <p>
-                Evaluate the unfamiliar file before it reaches
-                the employee or internal workflow.
+                Check the unfamiliar file, link, email or QR code
+                before it reaches the employee or internal workflow.
             </p>
 
         </article>
@@ -337,13 +561,13 @@ needed for security and governance.
 
         <p>
             Every day, employees are asked to trust resumes,
-            contracts, invoices, customer documents, downloads,
-            and attachments from outside the organization.
+            contracts, invoices, payment requests, links, and
+            QR codes from outside the organization.
         </p>
 
         <p>
             PreClear creates a controlled moment before that trust
-            is granted. It evaluates the file, communicates the
+            is granted. It checks what arrived, communicates the
             recommendation, and preserves the evidence behind
             the decision.
         </p>
@@ -371,7 +595,7 @@ needed for security and governance.
 
         <p>
             PreClear Business creates visibility beyond the
-            individual file check.
+            individual check.
         </p>
 
     </div>
@@ -427,7 +651,7 @@ needed for security and governance.
 
             <p>
                 Maintain an auditable history of the
-                decisions made before files entered.
+                decisions made before outside content entered.
             </p>
 
         </article>
@@ -479,7 +703,7 @@ needed for security and governance.
             </p>
 
             <ul>
-                <li>PreClear file analysis</li>
+                <li>File, link, email and QR code checks</li>
                 <li>Organization dashboard</li>
                 <li>Business Trust Journal</li>
                 <li>Team roles</li>

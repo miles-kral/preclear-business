@@ -1,0 +1,25 @@
+{# Evidence rows for a QR code analysis. Expects analysis and details. #}
+<div>
+    <span>
+        Analysis type
+    </span>
+    <strong>
+        QR code
+    </strong>
+</div>
+<div>
+    <span>
+        Source file
+    </span>
+    <strong>
+        {{ details.source_file or "Unknown" }}
+    </strong>
+</div>
+<div>
+    <span>
+        Codes found
+    </span>
+    <strong>
+        {{ (details.codes or [])|length }}
+    </strong>
+</div>

@@ -156,6 +156,12 @@ def _decision_label(
     if decision == "DO_NOT_OPEN" and analysis_type == "link":
         return "Do Not Visit"
 
+    if decision == "DO_NOT_OPEN" and analysis_type == "email":
+        return "Do Not Trust"
+
+    if decision == "DO_NOT_OPEN" and analysis_type == "qr":
+        return "Do Not Scan"
+
     labels = {
         "LOOKS_SAFE": "Looks Safe",
         "USE_CAUTION": "Use Caution",
@@ -434,6 +440,178 @@ def _field_table(
     return table
 
 
+def _item_table(
+    title,
+    rows,
+    styles,
+):
+    """A two-column table of items (text and decision) for evidence PDFs."""
+    table_rows = [
+        [
+            Paragraph(title, styles["label"]),
+            Paragraph("DECISION", styles["label"]),
+        ]
+    ]
+
+    for text, decision in rows:
+        table_rows.append(
+            [
+                Paragraph(
+                    _safe(text),
+                    _fit_style(text, styles["small"]),
+                ),
+                Paragraph(
+                    _safe(decision),
+                    styles["small"],
+                ),
+            ]
+        )
+
+    table = Table(
+        table_rows,
+        repeatRows=1,
+        colWidths=[
+            4.9 * inch,
+            1.4 * inch,
+        ],
+    )
+
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), SURFACE),
+                ("BOX", (0, 0), (-1, -1), 0.6, BORDER),
+                ("INNERGRID", (0, 0), (-1, -1), 0.4, BORDER),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+
+    return table
+
+
+def _append_qr_evidence(
+    story,
+    details: dict,
+    styles,
+) -> None:
+    """Adds the image name and each decoded QR code for a QR analysis."""
+    codes = details.get("codes") or []
+
+    story.append(
+        _field_table(
+            [
+                ("Analysis Type", "QR code"),
+                ("Source File", details.get("source_file") or "Unknown"),
+                ("Codes Found", len(codes)),
+            ],
+            styles,
+        )
+    )
+
+    if codes:
+        story.append(Spacer(1, 12))
+        story.append(
+            _item_table(
+                "QR CODE CONTENTS (SHOWN AS TEXT, SECRETS REMOVED)",
+                [
+                    (
+                        (f"Page {code['page']}: " if code.get("page") else "")
+                        + f"{code.get('summary')} {code.get('display')}",
+                        _decision_label(code.get("decision") or "", "qr"),
+                    )
+                    for code in codes
+                ],
+                styles,
+            )
+        )
+
+
+def _append_email_evidence(
+    story,
+    details: dict,
+    styles,
+) -> None:
+    """Adds sender, verification, attachment and link evidence for an email."""
+    auth = details.get("authentication") or {}
+
+    if auth:
+        verification = (
+            f"SPF {auth.get('spf') or 'none'} · "
+            f"DKIM {auth.get('dkim') or 'none'} · "
+            f"DMARC {auth.get('dmarc') or 'none'}"
+        )
+    else:
+        verification = "Not recorded"
+
+    sender = details.get("from_address") or "Not readable"
+    if details.get("from_name"):
+        sender = f"{details['from_name']} <{sender}>"
+
+    story.append(
+        _field_table(
+            [
+                ("From", sender),
+                ("Reply-To", details.get("reply_to") or "Same as sender"),
+                ("Sender Verification", verification),
+                ("Sent", details.get("date") or "Unknown"),
+                ("Links Checked", len(details.get("links") or [])),
+                (
+                    "Attachments Scanned",
+                    len(details.get("attachments") or []),
+                ),
+            ],
+            styles,
+        )
+    )
+
+    def item_table(title, rows):
+        return _item_table(title, rows, styles)
+
+    attachments = details.get("attachments") or []
+
+    if attachments:
+        rows = []
+
+        for item in attachments:
+            text = item.get("name") or "attachment"
+            for code in item.get("qr") or []:
+                page = f" page {code['page']}" if code.get("page") else ""
+                text += f" (QR code{page}: {code.get('summary')} {code.get('display')})"
+            rows.append(
+                (
+                    text,
+                    _decision_label(item.get("decision") or "NOT_CHECKED"),
+                )
+            )
+
+        story.append(Spacer(1, 12))
+        story.append(item_table("ATTACHMENT", rows))
+
+    links = details.get("links") or []
+
+    if links:
+        rows = []
+
+        for item in links:
+            text = item.get("url") or item.get("host") or "link"
+            if item.get("mismatch"):
+                text = f"{text} (link text shows {item['mismatch']})"
+            rows.append(
+                (
+                    text,
+                    _decision_label(item.get("decision") or "", "link"),
+                )
+            )
+
+        story.append(Spacer(1, 12))
+        story.append(item_table("LINK (SHOWN AS TEXT, NOT VISITED)", rows))
+
+
 def build_evidence_record_pdf(
     *,
     analysis,
@@ -442,6 +620,14 @@ def build_evidence_record_pdf(
 ) -> bytes:
     is_link = (
         getattr(analysis, "analysis_type", "file") == "link"
+    )
+
+    is_email = (
+        getattr(analysis, "analysis_type", "file") == "email"
+    )
+
+    is_qr = (
+        getattr(analysis, "analysis_type", "file") == "qr"
     )
 
     details = _load_details(analysis)
@@ -725,7 +911,11 @@ def build_evidence_record_pdf(
                     organization.name,
                 ),
                 (
-                    "Link" if is_link else "Filename",
+                    "Subject" if is_email
+                    else (
+                        "QR Code" if is_qr
+                        else ("Link" if is_link else "Filename")
+                    ),
                     analysis.filename,
                 ),
                 (
@@ -833,122 +1023,237 @@ def build_evidence_record_pdf(
 # THREAT INTELLIGENCE
 # ---------------------------------------------------------
 
-    story.append(
-        Paragraph(
-            "Threat Intelligence",
-            styles["section"],
-        )
-    )
+    # Emails have no single reputation lookup; their attachments and
+    # links were checked individually and appear in the rationale.
+    if not is_email and not is_qr:
 
-    vt_subject = (
-        "domain" if is_link else "SHA-256 fingerprint"
-    )
-
-    if analysis.virustotal_found is None:
-
-        reputation_label = (
-            "Intelligence Unavailable"
+        story.append(
+            Paragraph(
+                "Threat Intelligence",
+                styles["section"],
+            )
         )
 
-        reputation_text = (
-            "VirusTotal threat intelligence was not "
-            "available when this analysis was performed. "
-            "PreClear's Trust Decision was based on the "
-            "other security indicators identified during "
-            "analysis."
+        vt_subject = (
+            "domain" if is_link else "SHA-256 fingerprint"
         )
 
-    elif analysis.virustotal_found:
-
-        malicious_count = (
-            analysis.virustotal_malicious
-            or 0
-        )
-
-        suspicious_count = (
-            analysis.virustotal_suspicious
-            or 0
-        )
-
-        undetected_count = (
-            analysis.virustotal_undetected
-            or 0
-        )
-
-        harmless_count = (
-            analysis.virustotal_harmless
-            or 0
-        )
-
-        if malicious_count > 0:
+        if analysis.virustotal_found is None:
 
             reputation_label = (
-                "Threat Detected"
+                "Intelligence Unavailable"
             )
 
             reputation_text = (
-                f"VirusTotal recognized this {vt_subject} "
-                "and reported malicious "
-                "detections from participating security "
-                "engines."
+                "VirusTotal threat intelligence was not "
+                "available when this analysis was performed. "
+                "PreClear's Trust Decision was based on the "
+                "other security indicators identified during "
+                "analysis."
             )
 
-        elif suspicious_count > 0:
+        elif analysis.virustotal_found:
 
-            reputation_label = (
-                "Suspicious Reputation"
+            malicious_count = (
+                analysis.virustotal_malicious
+                or 0
             )
 
-            reputation_text = (
-                f"VirusTotal recognized this {vt_subject} "
-                "and reported suspicious "
-                "detections that contributed to "
-                "PreClear's Trust Decision."
+            suspicious_count = (
+                analysis.virustotal_suspicious
+                or 0
             )
+
+            undetected_count = (
+                analysis.virustotal_undetected
+                or 0
+            )
+
+            harmless_count = (
+                analysis.virustotal_harmless
+                or 0
+            )
+
+            if malicious_count > 0:
+
+                reputation_label = (
+                    "Threat Detected"
+                )
+
+                reputation_text = (
+                    f"VirusTotal recognized this {vt_subject} "
+                    "and reported malicious "
+                    "detections from participating security "
+                    "engines."
+                )
+
+            elif suspicious_count > 0:
+
+                reputation_label = (
+                    "Suspicious Reputation"
+                )
+
+                reputation_text = (
+                    f"VirusTotal recognized this {vt_subject} "
+                    "and reported suspicious "
+                    "detections that contributed to "
+                    "PreClear's Trust Decision."
+                )
+
+            else:
+
+                reputation_label = (
+                    "No Threat Detections"
+                )
+
+                reputation_text = (
+                    "VirusTotal recognized this "
+                    + ("domain" if is_link else "file fingerprint")
+                    + " and reported no malicious "
+                    "or suspicious detections in the latest "
+                    "available analysis."
+                )
 
         else:
 
             reputation_label = (
-                "No Threat Detections"
+                "No Existing Reputation"
             )
 
             reputation_text = (
-                "VirusTotal recognized this "
-                + ("domain" if is_link else "file fingerprint")
-                + " and reported no malicious "
-                "or suspicious detections in the latest "
-                "available analysis."
+                f"This {vt_subject} was not found in "
+                "VirusTotal's available threat intelligence. "
+                "PreClear's Trust Decision is based on the "
+                "other security indicators identified during "
+                "analysis."
             )
 
-    else:
 
-        reputation_label = (
-            "No Existing Reputation"
+        story.append(
+            _field_table(
+                [
+                    (
+                        "VirusTotal Reputation",
+                        reputation_label,
+                    ),
+                ],
+                styles,
+            )
         )
 
-        reputation_text = (
-            f"This {vt_subject} was not found in "
-            "VirusTotal's available threat intelligence. "
-            "PreClear's Trust Decision is based on the "
-            "other security indicators identified during "
-            "analysis."
-        )
 
+        if analysis.virustotal_found:
 
-    story.append(
-        _field_table(
-            [
-                (
-                    "VirusTotal Reputation",
-                    reputation_label,
-                ),
-            ],
-            styles,
-        )
-    )
+            story.append(
+                Spacer(
+                    1,
+                    10,
+                )
+            )
 
+            vt_table = Table(
+                [
+                    [
+                        Paragraph(
+                            "MALICIOUS",
+                            styles["label"],
+                        ),
+                        Paragraph(
+                            "SUSPICIOUS",
+                            styles["label"],
+                        ),
+                        Paragraph(
+                            "UNDETECTED",
+                            styles["label"],
+                        ),
+                        Paragraph(
+                            "HARMLESS",
+                            styles["label"],
+                        ),
+                    ],
+                    [
+                        Paragraph(
+                            f"<b>{malicious_count}</b>",
+                            styles["body"],
+                        ),
+                        Paragraph(
+                            f"<b>{suspicious_count}</b>",
+                            styles["body"],
+                        ),
+                        Paragraph(
+                            f"<b>{undetected_count}</b>",
+                            styles["body"],
+                        ),
+                        Paragraph(
+                            f"<b>{harmless_count}</b>",
+                            styles["body"],
+                        ),
+                    ],
+                ],
+                colWidths=[
+                    1.575 * inch,
+                    1.575 * inch,
+                    1.575 * inch,
+                    1.575 * inch,
+                ],
+                hAlign="CENTER",
+            )
 
-    if analysis.virustotal_found:
+            vt_table.setStyle(
+                TableStyle(
+                    [
+                        (
+                            "BACKGROUND",
+                            (0, 0),
+                            (-1, 0),
+                            SURFACE,
+                        ),
+                        (
+                            "BOX",
+                            (0, 0),
+                            (-1, -1),
+                            0.6,
+                            BORDER,
+                        ),
+                        (
+                            "INNERGRID",
+                            (0, 0),
+                            (-1, -1),
+                            0.4,
+                            BORDER,
+                        ),
+                        (
+                            "ALIGN",
+                            (0, 0),
+                            (-1, -1),
+                            "CENTER",
+                        ),
+                        (
+                            "VALIGN",
+                            (0, 0),
+                            (-1, -1),
+                            "MIDDLE",
+                        ),
+                        (
+                            "TOPPADDING",
+                            (0, 0),
+                            (-1, -1),
+                            8,
+                        ),
+                        (
+                            "BOTTOMPADDING",
+                            (0, 0),
+                            (-1, -1),
+                            8,
+                        ),
+                    ]
+                )
+            )
+
+            story.append(
+                vt_table
+            )
+
 
         story.append(
             Spacer(
@@ -957,146 +1262,55 @@ def build_evidence_record_pdf(
             )
         )
 
-        vt_table = Table(
-            [
-                [
-                    Paragraph(
-                        "MALICIOUS",
-                        styles["label"],
-                    ),
-                    Paragraph(
-                        "SUSPICIOUS",
-                        styles["label"],
-                    ),
-                    Paragraph(
-                        "UNDETECTED",
-                        styles["label"],
-                    ),
-                    Paragraph(
-                        "HARMLESS",
-                        styles["label"],
-                    ),
-                ],
-                [
-                    Paragraph(
-                        f"<b>{malicious_count}</b>",
-                        styles["body"],
-                    ),
-                    Paragraph(
-                        f"<b>{suspicious_count}</b>",
-                        styles["body"],
-                    ),
-                    Paragraph(
-                        f"<b>{undetected_count}</b>",
-                        styles["body"],
-                    ),
-                    Paragraph(
-                        f"<b>{harmless_count}</b>",
-                        styles["body"],
-                    ),
-                ],
-            ],
-            colWidths=[
-                1.575 * inch,
-                1.575 * inch,
-                1.575 * inch,
-                1.575 * inch,
-            ],
-            hAlign="CENTER",
-        )
+        if is_link:
+            reputation_text += (
+                " Only the link's domain was looked up, "
+                "never the full link."
+            )
 
-        vt_table.setStyle(
-            TableStyle(
-                [
-                    (
-                        "BACKGROUND",
-                        (0, 0),
-                        (-1, 0),
-                        SURFACE,
-                    ),
-                    (
-                        "BOX",
-                        (0, 0),
-                        (-1, -1),
-                        0.6,
-                        BORDER,
-                    ),
-                    (
-                        "INNERGRID",
-                        (0, 0),
-                        (-1, -1),
-                        0.4,
-                        BORDER,
-                    ),
-                    (
-                        "ALIGN",
-                        (0, 0),
-                        (-1, -1),
-                        "CENTER",
-                    ),
-                    (
-                        "VALIGN",
-                        (0, 0),
-                        (-1, -1),
-                        "MIDDLE",
-                    ),
-                    (
-                        "TOPPADDING",
-                        (0, 0),
-                        (-1, -1),
-                        8,
-                    ),
-                    (
-                        "BOTTOMPADDING",
-                        (0, 0),
-                        (-1, -1),
-                        8,
-                    ),
-                ]
+        story.append(
+            Paragraph(
+                reputation_text,
+                styles["body"],
             )
         )
 
         story.append(
-            vt_table
+            Spacer(
+                1,
+                17,
+            )
         )
-
-
-    story.append(
-        Spacer(
-            1,
-            10,
-        )
-    )
-
-    if is_link:
-        reputation_text += (
-            " Only the link's domain was looked up, "
-            "never the full link."
-        )
-
-    story.append(
-        Paragraph(
-            reputation_text,
-            styles["body"],
-        )
-    )
-
-    story.append(
-        Spacer(
-            1,
-            17,
-        )
-    )
 
 
     story.append(
         Paragraph(
-            "Link Evidence" if is_link else "File Evidence",
+            "Email Evidence" if is_email
+            else (
+                "QR Code Evidence" if is_qr
+                else ("Link Evidence" if is_link else "File Evidence")
+            ),
             styles["section"],
         )
     )
 
-    if is_link:
+    if is_email:
+
+        _append_email_evidence(
+            story,
+            details,
+            styles,
+        )
+
+    elif is_qr:
+
+        _append_qr_evidence(
+            story,
+            details,
+            styles,
+        )
+
+    elif is_link:
 
         scheme = link_info.get("scheme")
 
@@ -1275,7 +1489,15 @@ def build_evidence_record_pdf(
                 Paragraph(
                     "SHA-256 FINGERPRINT OF THE ADDRESS"
                     if is_link
-                    else "SHA-256 FINGERPRINT",
+                    else (
+                        "SHA-256 FINGERPRINT OF THE MESSAGE"
+                        if is_email
+                        else (
+                            "SHA-256 FINGERPRINT OF THE FILE"
+                            if is_qr
+                            else "SHA-256 FINGERPRINT"
+                        )
+                    ),
                     styles["label"],
                 ),
             ],

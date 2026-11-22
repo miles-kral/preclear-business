@@ -1,0 +1,27 @@
+Authentication-Results: mx.acme.com; spf=pass
+ smtp.mailfrom=email.microsoft.com; dkim=pass header.d=microsoft.com;
+ dmarc=pass header.from=microsoft.com
+Received: from mail.microsoft.com by mx.acme.com
+From: Microsoft <no-reply@microsoft.com>
+To: you@acme.com
+Subject: Your monthly security report
+Message-ID: <y@microsoft.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============7020598433598214304=="
+
+--===============7020598433598214304==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+See your report at https://www.microsoft.com/en-us/security and https://accou=
+nt.microsoft.com/
+
+--===============7020598433598214304==
+Content-Type: application/pdf
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="report.pdf"
+MIME-Version: 1.0
+
+JVBERi0xLjcgcmVwb3J0
+
+--===============7020598433598214304==--

@@ -33,7 +33,13 @@ class SecurityHeadersMiddleware(
             "https://challenges.cloudflare.com; "
             "object-src 'none'; "
             "base-uri 'self'; "
-            "form-action 'self'; "
+            # Checkout and billing buttons post to PreClear, which then
+            # redirects to Stripe. Browsers apply form-action to that
+            # redirect too, so Stripe's checkout and billing portal
+            # must be listed or the buttons silently do nothing.
+            "form-action 'self' "
+            "https://checkout.stripe.com "
+            "https://billing.stripe.com; "
             "frame-ancestors 'none'"
         )
 

@@ -297,6 +297,15 @@ def _check_extension(
             "The file does not have a recognizable extension.",
         )
 
+    if extension == ".msg":
+        assessment.note(
+            "This is an Outlook message file (.msg). PreClear inspects "
+            "emails saved as .eml files. To check the email's sender, "
+            "links and attachments, save it as .eml (in Outlook on the "
+            "web or the new Outlook, use Download or Save as) and "
+            "upload that instead."
+        )
+
 
 def _check_filename_tricks(
     assessment: _Assessment,
@@ -449,6 +458,7 @@ def analyze_file(
     filename: str,
     content: bytes,
     content_type: str | None = None,
+    check_reputation: bool = True,
 ) -> dict:
     """
     Inspects an uploaded file. This function is blocking (hashing and a
@@ -467,7 +477,11 @@ def analyze_file(
 
     signature = detect_signature(content)
 
-    vt_result = lookup_file_hash(sha256)
+    vt_result = (
+        lookup_file_hash(sha256)
+        if check_reputation
+        else {"available": False, "found": False, "error": "skipped"}
+    )
 
     assessment = _Assessment()
 

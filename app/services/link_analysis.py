@@ -127,6 +127,7 @@ BRAND_DOMAINS: dict[str, set[str]] = {
     "google": {
         "google.com", "gmail.com", "googleusercontent.com", "gstatic.com",
         "youtube.com", "googleapis.com", "withgoogle.com", "goo.gl",
+        "googlemail.com",
         "forms.gle", "g.co",
     },
     "amazon": {"amazon.com", "amazonaws.com", "a2z.com", "amzn.to"},
@@ -187,7 +188,7 @@ BRAND_DISPLAY_NAMES = {
 HOMOGLYPH_SWAPS = (
     ("rn", "m"), ("vv", "w"), ("cl", "d"), ("0", "o"), ("1", "l"),
     ("3", "e"), ("5", "s"), ("7", "t"), ("4", "a"), ("@", "a"),
-    ("$", "s"),
+    ("$", "s"), ("i", "l"),
 )
 
 # Email security services that rewrite links. PreClear unwraps them and
@@ -424,13 +425,16 @@ def _check_brand(
         if is_official(brand) or len(brand) < 4:
             continue
 
+        # Both sides are reduced to a "skeleton" so swapped look-alike
+        # characters (1 for l, rn for m, 0 for o) compare as equal.
         skeleton = _skeleton(readable_domain_name or domain_name)
+        brand_skeleton = _skeleton(brand)
         name = BRAND_DISPLAY_NAMES[brand]
 
         imitates = (
-            skeleton == brand
-            or (len(brand) >= 5 and _edit_distance(skeleton, brand) == 1)
-            or (len(brand) >= 8 and _edit_distance(skeleton, brand) == 2)
+            skeleton == brand_skeleton
+            or (len(brand) >= 6 and _edit_distance(skeleton, brand_skeleton) == 1)
+            or (len(brand) >= 8 and _edit_distance(skeleton, brand_skeleton) == 2)
         )
 
         if imitates:
@@ -442,11 +446,15 @@ def _check_brand(
             )
             return True
 
-        if len(brand) >= 6 and brand in domain_name:
+        if len(brand) >= 6 and brand_skeleton in skeleton:
+            # Spelled with swapped characters (paypa1-secure) is a
+            # deliberate imitation; spelled plainly is only a mention.
+            disguised = brand not in domain_name.lower()
             assessment.flag(
-                "MEDIUM",
-                f"The domain {registered_domain} contains {name}'s "
-                f"name but is not a {name} domain.",
+                "HIGH" if disguised else "MEDIUM",
+                f"The domain {registered_domain} contains "
+                + ("a disguised spelling of " if disguised else "")
+                + f"{name}'s name but is not a {name} domain.",
             )
             return True
 
@@ -912,7 +920,10 @@ def _check_reputation(
     return result
 
 
-def analyze_link(raw_link: str) -> dict:
+def analyze_link(
+    raw_link: str,
+    check_reputation: bool = True,
+) -> dict:
     """
     Analyzes a link without visiting it. Blocking (VirusTotal lookup), so
     async routes must call it through run_in_threadpool.
@@ -940,7 +951,11 @@ def analyze_link(raw_link: str) -> dict:
             "[.]). PreClear restored the real address before checking."
         )
 
-    vt_result = _check_reputation(assessment, details)
+    vt_result = (
+        _check_reputation(assessment, details)
+        if check_reputation
+        else {"available": False, "found": False, "error": "skipped"}
+    )
 
     if not assessment.reasons:
         assessment.note(

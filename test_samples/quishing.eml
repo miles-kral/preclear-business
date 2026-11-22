@@ -1,0 +1,63 @@
+Authentication-Results: mx.acme.com; spf=pass
+ smtp.mailfrom=hr-portal-notice.com; dkim=pass; dmarc=pass
+ header.from=hr-portal-notice.com
+Received: from mail.hr-portal-notice.com by mx.acme.com
+From: "HR Department" <hr@hr-portal-notice.com>
+To: you@acme.com
+Subject: Action required: review your 2027 benefits
+Message-ID: <q@hr-portal-notice.com>
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============6249135730506876881=="
+
+--===============6249135730506876881==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Scan the QR code below with your phone to review your benefits.
+
+--===============6249135730506876881==
+MIME-Version: 1.0
+Content-Type: multipart/related;
+ boundary="===============4896868022135199181=="
+
+--===============4896868022135199181==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+<html><body><p>Scan the QR code with your phone.</p><img src=3D"cid:qr1"></bo=
+dy></html>
+
+--===============4896868022135199181==
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-ID: <qr1>
+MIME-Version: 1.0
+Content-Disposition: inline
+
+iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAIAAADdBSngAAAEdklEQVR4nO3dS24kKQBAwfGo739l
+z3YkeoEQn+dyxLqdWW0/IVFkwtf39/c/0PPv6w8AfydNoqRJlDSJkiZR0iRKmkRJkyhpEiVNoqRJ
+lDSJkiZR0iRKmkRJkyhpEiVNoqRJlDSJkiZR0iRKmkT92XWhr6+vXZdaMPM2/donHK88Xufc3Wc+
+z7l7rdm1s4FRkyhpEiVNoqRJlDSJ2jZDH53bg+7cbHe88sy9Zv7N2sx61/cD/b/FyKhJlDSJkiZR
+0iRKmkQdnKGPdq1ir5mZ7a79VG0Nfcbbv8UMoyZR0iRKmkRJkyhpEnV1hl6za2a9aw2d/zNqEiVN
+oqRJlDSJkiZRv2iGvjaPPrfyPuM3z+uNmkRJkyhpEiVNoqRJ1NUZ+s355rl3w9eszdnXnqhf+zw1
+Rk2ipEmUNImSJlHSJOrgDP3tjuKjc7uu7Zprn9sprva3mGHUJEqaREmTKGkSJU2its3Qa2uytbXm
+XfPxtXv9REZNoqRJlDSJkiZR0iTq69ze4OfOFxvtWmve5ebecedW3t8yahIlTaKkSZQ0iZImUdtm
+6FM3ezpvXbvXze8Qdv3UzHVG575jWWPUJEqaREmTKGkSJU2icu+hn5sRr919xtv577l3zN+eImfU
+JEqaREmTKGkSJU2ick+5j97uuD6jdh76rnVtM3T4C2kSJU2ipEmUNIl6/JT7zRXhGbV3w8/9Ns59
+Hk+58+GkSZQ0iZImUdIk6uAa+mjXSu5n7CY3o7Y6f5NRkyhpEiVNoqRJlDSJujpDn3Fub7S3e57f
+/Dbg7Znp1tD5cNIkSppESZMoaRJ19Tz0tZlj7WTzn/ju/K7f/M3vGYyaREmTKGkSJU2ipEnUwb3c
+R+fes357LtiMXbPdc8+9156WN2oSJU2ipEmUNImSJlEHd4q7ucvZjHMnqa3d/dwK9c238p2Hzq8j
+TaKkSZQ0iZImUdvW0G/uBH5zHXnXvWor1G/fVZ9h1CRKmkRJkyhpEiVNoq6+h35uF7jR22fab/6/
+PpVRkyhpEiVNoqRJlDSJOriXe/9Z9Npnrp0F//ZbDqMmUdIkSppESZMoaRJ1dQ395nXevtO96zo3
+T5nf9VPeQ+fDSZMoaRIlTaKkSVTuPPQ1tSfYzz2Hv2vHudq+cCOjJlHSJEqaREmTKGkSdfC0tbe7
+xN98Wv7mrnRrV56xa1XdGjofTppESZMoaRIlTaKunof+dtZ8bgZ6cz16/KmfOK+fYdQkSppESZMo
+aRIlTaKuztBv6p8mNnP38TOf+1+8PS9+ZNQkSppESZMoaRIlTaI+doZ+c+e6c8/Gr33PcG4Wf3O/
+d6MmUdIkSppESZMoaRJ1dYZ+cz+30blV9XPnvJ+bEb89n26GUZMoaRIlTaKkSZQ0iTo4Q689MT7z
+b87N2deus2bXtwpvv1ExahIlTaKkSZQ0iZImUdtOW4O9jJpESZMoaRIlTaKkSZQ0iZImUdIkSppE
+SZMoaRIlTaKkSZQ0iZImUdIkSppESZMoaRIlTaKkSZQ0iZImUf8BSoA1p60kvp8AAAAASUVORK5C
+YII=
+
+--===============4896868022135199181==--
+
+--===============6249135730506876881==--

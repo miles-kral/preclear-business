@@ -29,7 +29,7 @@ Privacy Policy | PreClear Business
             </p>
 
             <p class="public-page__updated">
-                Effective: August 27, 2026
+                Effective: November 22, 2026
             </p>
 
         </header>
@@ -84,29 +84,60 @@ Privacy Policy | PreClear Business
             </h3>
 
             <p>
-                When PreClear analyzes a file, the file is processed
-                to evaluate security characteristics and generate a
-                Trust Decision.
+                When PreClear analyzes a file, link, saved email,
+                or QR code, the submitted content is processed to
+                evaluate its security characteristics and generate
+                a Trust Decision. Images and PDF pages may be
+                examined for QR codes, and the contents of any QR
+                codes found are decoded as part of the analysis.
             </p>
 
             <p>
                 PreClear does not retain the contents of files
-                submitted for analysis after processing is complete.
-                We retain security metadata and analysis results
-                associated with the submission, which may include
-                the filename, file type, MIME type, file size,
-                cryptographic hash, threat intelligence results,
-                risk level, Trust Decision, explanations, review
-                status, and related security evidence.
+                submitted for analysis after processing is complete,
+                including attachments inside a submitted email. The
+                body text of a submitted email is read during
+                analysis but is not retained. We retain security
+                metadata and analysis results associated with the
+                submission, which may include the filename, file
+                type, MIME type, file size, cryptographic hash,
+                threat intelligence results, risk level, Trust
+                Decision, explanations, review status, and related
+                security evidence.
+            </p>
+
+            <p>
+                Depending on what was submitted, that security
+                evidence may also include: for links, the full link
+                address and its domain; for emails, the subject
+                line, the sender's name and address, reply-to and
+                return-path addresses, sent
+                date, message identifier, sender verification
+                results recorded by the receiving mail server, the
+                addresses and visible text of links in the message,
+                and the names, sizes, cryptographic hashes, and
+                results of its attachments; and for QR codes, the
+                decoded contents of each code. Emails and links may
+                contain personal information about people outside
+                your organization, such as a sender's name and
+                email address.
+            </p>
+
+            <p>
+                Some QR codes contain secrets, such as Wi-Fi network
+                passwords or authenticator account keys. PreClear
+                removes these secrets and does not retain them.
             </p>
 
             <p>
                 When PreClear uses VirusTotal threat intelligence,
-                PreClear submits the file's SHA-256 cryptographic
-                fingerprint to query existing threat intelligence.
-                PreClear does not upload the contents of the
-                submitted file to VirusTotal as part of this
-                reputation lookup.
+                PreClear submits a file's SHA-256 cryptographic
+                fingerprint, or a link's domain name or IP address,
+                to query existing threat intelligence. PreClear does
+                not upload the contents of submitted files to
+                VirusTotal, and does not send full link addresses,
+                email content, or QR code contents as part of these
+                reputation lookups.
             </p>
 
             <h3>
@@ -201,8 +232,6 @@ Privacy Policy | PreClear Business
 
         <section class="public-page__section">
 
-            <section class="public-page__section">
-
                 <h2>
                     4. Threat intelligence and security analysis
                 </h2>
@@ -215,11 +244,19 @@ Privacy Policy | PreClear Business
                 <p>
                     PreClear currently uses VirusTotal threat
                     intelligence by querying the SHA-256 cryptographic
-                    fingerprint of a submitted file. This allows
-                    PreClear to determine whether the fingerprint is
-                    associated with existing threat intelligence
-                    without uploading the contents of the submitted
-                    file to VirusTotal as part of that lookup.
+                    fingerprint of a submitted file, or the domain name
+                    or IP address of a submitted link. This allows
+                    PreClear to determine whether a fingerprint or
+                    domain is associated with existing threat
+                    intelligence without uploading the contents of the
+                    submitted file or sending the full link to
+                    VirusTotal as part of that lookup.
+                </p>
+
+                <p>
+                    PreClear does not visit, open, or follow links it
+                    analyzes. Links are evaluated by examining the
+                    address itself.
                 </p>
 
         </section>

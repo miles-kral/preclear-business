@@ -11,8 +11,10 @@ Trust Decision
 {% block content %}
 
 {% set is_link = analysis.analysis_type == "link" %}
+{% set is_email = analysis.analysis_type == "email" %}
+{% set is_qr = analysis.analysis_type == "qr" %}
 
-{% if is_link %}
+{% if is_link or is_email or is_qr %}
     <link
         rel="stylesheet"
         href="/static/css/link-analysis.css"
@@ -74,6 +76,10 @@ Trust Decision
                     Looks Safe
                 {% elif analysis.decision == "USE_CAUTION" %}
                     Use Caution
+                {% elif is_email %}
+                    Do Not Trust
+                {% elif is_qr %}
+                    Do Not Scan
                 {% elif analysis.analysis_type == "link" %}
                     Do Not Visit
                 {% else %}
@@ -141,6 +147,7 @@ Trust Decision
 
     </section>
 
+    {% if not is_email and not is_qr %}
     <section class="business-result-section">
 
         <div class="business-result-section__header">
@@ -329,6 +336,7 @@ Trust Decision
         </div>
 
     </section>
+    {% endif %}
 
 
     <section class="business-result-section">
@@ -347,7 +355,11 @@ Trust Decision
 
         <div class="business-result-details">
 
-            {% if is_link %}
+            {% if is_email %}
+            {% include "_email_evidence_rows.html" %}
+            {% elif is_qr %}
+            {% include "_qr_evidence_rows.html" %}
+            {% elif is_link %}
             <div>
                 <span>
                     Analysis type
@@ -449,6 +461,14 @@ Trust Decision
     </section>
 
 
+    {% if is_email %}
+        {% include "_email_details.html" %}
+    {% endif %}
+
+    {% if is_qr %}
+        {% include "_qr_details.html" %}
+    {% endif %}
+
     {% if is_link and analysis.target %}
         <section class="business-result-section">
             <div class="business-result-section__header">
@@ -535,7 +555,7 @@ Trust Decision
         <div class="business-result-hash">
 
             <span>
-                SHA-256 fingerprint{{ " of the address" if is_link else "" }}
+                SHA-256 fingerprint{{ " of the address" if is_link else (" of the message" if is_email else (" of the file" if is_qr else "")) }}
             </span>
 
             <code>

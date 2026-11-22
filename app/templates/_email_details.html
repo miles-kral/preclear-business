@@ -1,0 +1,112 @@
+{# Links and attachments found in an email. Expects analysis and details. #}
+{% macro decision_text(decision, kind) -%}
+    {%- if decision == "LOOKS_SAFE" -%}Looks Safe
+    {%- elif decision == "USE_CAUTION" -%}Use Caution
+    {%- elif decision == "DO_NOT_OPEN" -%}{{ "Do Not Visit" if kind == "link" else "Do Not Open" }}
+    {%- else -%}Not checked
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro decision_class(decision) -%}
+    {%- if decision == "LOOKS_SAFE" -%}business-result-risk--safe
+    {%- elif decision == "USE_CAUTION" -%}business-result-risk--caution
+    {%- elif decision == "DO_NOT_OPEN" -%}business-result-risk--danger
+    {%- endif -%}
+{%- endmacro %}
+
+<section class="business-result-section">
+    <div class="business-result-section__header">
+        <h3>
+            Email Subject
+        </h3>
+        <p>
+            The subject line as received. PreClear does not keep
+            the email's body text.
+        </p>
+    </div>
+    <div class="business-result-hash business-result-target">
+        <span>
+            Subject
+        </span>
+        <code>
+            {{ details.subject or "(no subject)" }}
+        </code>
+    </div>
+</section>
+
+{% if details.attachments %}
+    <section class="business-result-section">
+        <div class="business-result-section__header">
+            <h3>
+                Attachments
+            </h3>
+            <p>
+                Each attachment was scanned with the same checks
+                as an uploaded file.
+            </p>
+        </div>
+        <ul class="business-email-items">
+            {% for item in details.attachments %}
+                <li>
+                    <div>
+                        <strong>
+                            {{ item.name }}
+                        </strong>
+                        {% if item.size is defined and item.size is not none %}
+                            <small>
+                                {{ "{:,}".format(item.size) }} bytes
+                            </small>
+                        {% endif %}
+                        {% for code in item.qr or [] %}
+                            <small class="{{ 'business-email-items__warning' if code.decision != 'LOOKS_SAFE' else '' }}">
+                                QR code{% if code.page %} (page {{ code.page }}){% endif %}: {{ code.summary }}
+                            </small>
+                            <code>
+                                {{ code.display }}
+                            </code>
+                        {% endfor %}
+                    </div>
+                    <span class="business-result-risk {{ decision_class(item.decision) }}">
+                        {{ decision_text(item.decision, "file") }}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+{% endif %}
+
+{% if details.links %}
+    <section class="business-result-section">
+        <div class="business-result-section__header">
+            <h3>
+                Links
+            </h3>
+            <p>
+                Every link was checked without being visited. Addresses
+                are shown as text so they can't be clicked by accident.
+            </p>
+        </div>
+        <ul class="business-email-items">
+            {% for item in details.links %}
+                <li>
+                    <div>
+                        <strong>
+                            {{ item.host or "Link" }}
+                        </strong>
+                        {% if item.mismatch %}
+                            <small class="business-email-items__warning">
+                                Link text shows {{ item.mismatch }}
+                            </small>
+                        {% endif %}
+                        <code>
+                            {{ item.url }}
+                        </code>
+                    </div>
+                    <span class="business-result-risk {{ decision_class(item.decision) }}">
+                        {{ decision_text(item.decision, "link") }}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+{% endif %}

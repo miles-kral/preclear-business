@@ -34,6 +34,15 @@ from app.services.analysis_service import (
     MAX_UPLOAD_BYTES,
     analyze_file,
 )
+from app.services.email_analysis import (
+    InvalidEmailError,
+    analyze_email,
+    looks_like_email,
+)
+from app.services.qr_analysis import (
+    analyze_qr_in_file,
+    combine_with_file_result,
+)
 from app.services.link_analysis import (
     MAX_LINK_LENGTH,
     InvalidLinkError,
@@ -49,13 +58,17 @@ templates = Jinja2Templates(
 )
 
 
-# Must match the <option> values in analyze.html.
+# Must match the <option> values in analyze.html (the file form and the
+# QR scan form).
 ALLOWED_SOURCES = {
     "email",
     "vendor",
     "customer",
     "website",
     "shared",
+    "printed",
+    "text_message",
+    "document",
     "other",
 }
 
@@ -508,15 +521,86 @@ async def analyze_file_route(
             status_code=303,
         )
 
+    filename = file.filename or "unknown"
+
+    result = None
+
+    # A saved email (.eml) gets the email analyzer: sender, verification,
+    # requests, links and attachments. If it can't be read as an email,
+    # it falls back to the regular file checks.
+    if looks_like_email(filename, content):
+        try:
+            result = await run_in_threadpool(
+                analyze_email,
+                filename=filename,
+                content=content,
+            )
+        except InvalidEmailError:
+            result = None
+
+    if result is not None:
+        sender = (
+            result["details"].get("from_address")
+            or "an unknown sender"
+        )
+
+        analysis = _record_analysis(
+            db,
+            organization=current_organization,
+            user=current_user,
+            environment=environment_record,
+            source=source,
+            result=result,
+            analysis_type="email",
+            usage_status=analysis_usage_status,
+            event_type="email_analysis",
+            description=(
+                f"{current_user.name} checked an email "
+                f"from {sender}."
+            ),
+        )
+
+        return RedirectResponse(
+            url=f"/analysis/{analysis.id}",
+            status_code=303,
+        )
+
     # analyze_file hashes the file and calls VirusTotal, both of which
     # block. Running it in a worker thread keeps the server responsive
     # for everyone else while it works.
     result = await run_in_threadpool(
         analyze_file,
-        filename=file.filename or "unknown",
+        filename=filename,
         content=content,
         content_type=file.content_type,
     )
+
+    analysis_type = "file"
+
+    # Images and PDFs are also checked for QR codes, whose contents are
+    # explained and whose links are checked without being visited.
+    qr = await run_in_threadpool(
+        analyze_qr_in_file,
+        content,
+        result,
+    )
+
+    if qr is not None:
+        result, analysis_type = combine_with_file_result(
+            result,
+            qr,
+        )
+
+    if analysis_type == "qr":
+        description = (
+            f"{current_user.name} checked a QR code in "
+            f"{result['details']['source_file']}."
+        )
+    else:
+        description = (
+            f"{current_user.name} analyzed "
+            f"{result['filename']}."
+        )
 
     analysis = _record_analysis(
         db,
@@ -525,13 +609,14 @@ async def analyze_file_route(
         environment=environment_record,
         source=source,
         result=result,
-        analysis_type="file",
+        analysis_type=analysis_type,
         usage_status=analysis_usage_status,
-        event_type="file_analysis",
-        description=(
-            f"{current_user.name} analyzed "
-            f"{result['filename']}."
+        event_type=(
+            "qr_analysis"
+            if analysis_type == "qr"
+            else "file_analysis"
         ),
+        description=description,
     )
 
     return RedirectResponse(

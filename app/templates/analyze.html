@@ -10,6 +10,11 @@ Analyze
 
 {% block content %}
 
+<link
+    rel="stylesheet"
+    href="/static/css/link-analysis.css"
+>
+
 
 
 <section class="business-analyze-header">
@@ -39,6 +44,159 @@ Analyze
 <section class="business-analyze-layout">
 
     <div class="business-analyze-main">
+
+        <article
+            class="card business-analyze-card business-qr-card"
+            id="scan-qr"
+        >
+
+            <div class="business-analyze-card__header">
+
+                <div class="business-analyze-card__icon">
+
+                    <svg
+                        width="26"
+                        height="26"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <rect x="3" y="3" width="7" height="7" rx="1" />
+                        <rect x="14" y="3" width="7" height="7" rx="1" />
+                        <rect x="3" y="14" width="7" height="7" rx="1" />
+                        <path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3" />
+                    </svg>
+
+                </div>
+
+                <div>
+                    <h2>
+                        Scan a QR Code
+                    </h2>
+
+                    <p>
+                        Take a photo of the code here instead of
+                        scanning it with your camera app. Your phone
+                        won't open the code's link.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <form
+                id="business-qr-form"
+                class="business-analyze-form"
+                method="post"
+                action="/analyze"
+                enctype="multipart/form-data"
+                data-max-upload-bytes="{{ max_upload_bytes }}"
+                data-max-upload-mb="{{ max_upload_mb }}"
+            >
+
+                <div class="business-analyze-context-grid">
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Environment
+                        </span>
+
+                        <select
+                            name="environment"
+                            required
+                        >
+
+                            {% if environments %}
+
+                                {% for environment in environments %}
+
+                                    <option value="{{ environment.id }}">
+                                        {{ environment.name }}
+                                    </option>
+
+                                {% endfor %}
+
+                            {% else %}
+
+                                <option value="" disabled selected>
+                                    No active environments available
+                                </option>
+
+                            {% endif %}
+
+                        </select>
+
+                    </label>
+
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Where is the code?
+                        </span>
+
+                        <select name="source">
+
+                            <option value="printed">
+                                Printed sign, flyer or letter
+                            </option>
+
+                            <option value="email">
+                                Email
+                            </option>
+
+                            <option value="text_message">
+                                Text message
+                            </option>
+
+                            <option value="document">
+                                Document or PDF
+                            </option>
+
+                            <option value="website">
+                                Website
+                            </option>
+
+                            <option value="other">
+                                Other
+                            </option>
+
+                        </select>
+
+                    </label>
+
+                </div>
+
+
+                <label
+                    class="button button--primary business-qr-button"
+                    id="business-qr-button"
+                >
+                    Take a Photo of the QR Code
+                    <input
+                        id="business-qr-input"
+                        class="business-visually-hidden"
+                        type="file"
+                        name="file"
+                        accept="image/*"
+                        capture="environment"
+                    >
+                </label>
+
+                <small
+                    class="business-qr-status"
+                    id="business-qr-status"
+                    role="status"
+                >
+                    Fit the whole code in the photo, and don't tap
+                    anything your camera highlights.
+                </small>
+
+            </form>
+
+        </article>
 
         <article class="card business-analyze-card">
 
@@ -71,7 +229,10 @@ Analyze
                     <p>
                         Select the business context,
                         then choose the file you want
-                        PreClear to evaluate.
+                        PreClear to evaluate. To check an
+                        email, save it as an .eml file and
+                        upload it here. To check a QR code,
+                        upload a photo or screenshot of it.
                     </p>
                 </div>
 
@@ -384,11 +545,6 @@ Analyze
 
         </article>
 
-
-        <link
-            rel="stylesheet"
-            href="/static/css/link-analysis.css"
-        >
 
         <article
             class="card business-analyze-card business-link-card"
@@ -902,6 +1058,11 @@ Analyze
 
 <script
     src="/static/js/analyze.js"
+    defer
+></script>
+
+<script
+    src="/static/js/qr-scan.js"
     defer
 ></script>
 

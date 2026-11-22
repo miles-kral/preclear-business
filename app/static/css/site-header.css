@@ -1,0 +1,50 @@
+/* Keeps the public site's header navigation on one line at desktop
+   widths, now that it has one more link. */
+
+.business-header__nav a,
+.business-header__login,
+.business-header__actions .button {
+    white-space: nowrap;
+}
+
+
+@media (min-width: 1181px) and (max-width: 1440px) {
+
+    .business-mobile-menu {
+        gap: 22px;
+    }
+
+    .business-header__nav {
+        gap: 20px;
+    }
+
+    .business-header__actions {
+        gap: 12px;
+    }
+
+}
+
+
+/* Between the tablet menu and wide screens, the logo gives up a little
+   space so every link still fits. */
+@media (min-width: 1181px) and (max-width: 1320px) {
+
+    .business-header__shield {
+        width: 120px;
+        height: 120px;
+    }
+
+    .business-header__name strong {
+        font-size: 2.5rem;
+    }
+
+    .business-header__name span {
+        font-size: 1.25rem;
+    }
+
+    .business-header__nav a,
+    .business-header__login {
+        font-size: 0.9rem;
+    }
+
+}

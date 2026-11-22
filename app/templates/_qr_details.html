@@ -1,0 +1,45 @@
+{# What each QR code contains. Expects analysis and details. #}
+{% if details.codes %}
+    <section class="business-result-section">
+        <div class="business-result-section__header">
+            <h3>
+                QR Code Contents
+            </h3>
+            <p>
+                What each code would do if scanned. Contents are shown
+                as text, and passwords or secret keys are never stored.
+            </p>
+        </div>
+        <ul class="business-email-items">
+            {% for code in details.codes %}
+                <li>
+                    <div>
+                        <strong>
+                            {{ code.summary }}
+                        </strong>
+                        {% if code.page %}
+                            <small>
+                                Page {{ code.page }}
+                            </small>
+                        {% endif %}
+                        <code>
+                            {{ code.display }}
+                        </code>
+                    </div>
+                    <span class="business-result-risk
+                        {% if code.decision == 'LOOKS_SAFE' %}business-result-risk--safe
+                        {% elif code.decision == 'USE_CAUTION' %}business-result-risk--caution
+                        {% else %}business-result-risk--danger{% endif %}">
+                        {% if code.decision == "LOOKS_SAFE" %}
+                            Looks Safe
+                        {% elif code.decision == "USE_CAUTION" %}
+                            Use Caution
+                        {% else %}
+                            Do Not Scan
+                        {% endif %}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+{% endif %}

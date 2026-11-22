@@ -1,0 +1,60 @@
+{# Evidence rows for an email analysis. Expects analysis and details. #}
+{% set auth = details.authentication or {} %}
+<div>
+    <span>
+        From
+    </span>
+    <strong>
+        {% if details.from_name %}
+            {{ details.from_name }} &lt;{{ details.from_address }}&gt;
+        {% else %}
+            {{ details.from_address or "Not readable" }}
+        {% endif %}
+    </strong>
+</div>
+<div>
+    <span>
+        Reply-To
+    </span>
+    <strong>
+        {{ details.reply_to or "Same as sender" }}
+    </strong>
+</div>
+<div>
+    <span>
+        Sender verification
+    </span>
+    <strong>
+        {% if auth %}
+            SPF {{ auth.spf or "none" }} ·
+            DKIM {{ auth.dkim or "none" }} ·
+            DMARC {{ auth.dmarc or "none" }}
+        {% else %}
+            Not recorded
+        {% endif %}
+    </strong>
+</div>
+<div>
+    <span>
+        Sent
+    </span>
+    <strong>
+        {{ details.date or "Unknown" }}
+    </strong>
+</div>
+<div>
+    <span>
+        Links checked
+    </span>
+    <strong>
+        {{ (details.links or [])|length }}
+    </strong>
+</div>
+<div>
+    <span>
+        Attachments scanned
+    </span>
+    <strong>
+        {{ (details.attachments or [])|length }}
+    </strong>
+</div>

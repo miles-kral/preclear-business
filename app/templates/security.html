@@ -69,10 +69,68 @@ Security | PreClear Business
             </p>
 
             <p>
-                Files and other supported inputs can be evaluated
-                before normal organizational use, producing a
-                risk assessment and Trust Decision that helps
-                determine how the content should be handled.
+                Files, links, saved emails, and QR codes can be
+                evaluated before normal organizational use,
+                producing a risk assessment and Trust Decision
+                that helps determine how the content should be
+                handled.
+            </p>
+
+        </section>
+
+
+        <section class="public-page__section">
+
+            <h2>
+                Checking without exposure
+            </h2>
+
+            <p>
+                PreClear never visits the links it checks. Links
+                found in pasted text, emails, and QR codes are
+                evaluated by examining the address itself, so
+                PreClear's servers never connect to the
+                destination and nothing on the other end is
+                alerted that the link was examined.
+            </p>
+
+            <p>
+                Submitted content is treated as untrusted. Uploads
+                are limited in size, files are identified by their
+                actual contents rather than their names, emails and
+                images are processed within fixed limits, and PDF
+                pages are rendered without running scripts or
+                loading outside resources.
+            </p>
+
+            <p>
+                Threat intelligence lookups share as little as
+                possible. Files are looked up by their SHA-256
+                fingerprint, and links by their domain name or IP
+                address, never the full link, which can contain
+                sign-in tokens or personal details.
+            </p>
+
+        </section>
+
+
+        <section class="public-page__section">
+
+            <h2>
+                Less data kept
+            </h2>
+
+            <p>
+                PreClear keeps the evidence behind a Trust Decision,
+                not the content itself. File contents are not
+                retained after analysis, and the body text of a
+                saved email is read during analysis but not stored.
+            </p>
+
+            <p>
+                Some QR codes carry secrets, such as Wi-Fi passwords
+                or authenticator account keys. PreClear removes
+                those secrets before anything is recorded.
             </p>
 
         </section>

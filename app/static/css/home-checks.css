@@ -1,0 +1,183 @@
+/* =========================================================
+   HOMEPAGE: "WHAT PRECLEAR CHECKS"
+   Uses the homepage design tokens from styles.css.
+   ========================================================= */
+
+.home-checks {
+    padding: 80px clamp(24px, 7vw, 110px);
+
+    /* Keeps the heading clear of the sticky header after "What It Checks". */
+    scroll-margin-top: 90px;
+
+    background: var(--white, #fff);
+}
+
+
+.home-checks-grid {
+    display: grid;
+
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    gap: 22px;
+
+    max-width: 1180px;
+
+    margin: 0 auto;
+}
+
+
+.home-check-card {
+    display: flex;
+    flex-direction: column;
+
+    padding: 28px;
+
+    border: 1px solid var(--line, #dce6ef);
+    border-radius: var(--radius, 22px);
+
+    background: #fff;
+}
+
+
+.home-check-card__icon {
+    display: grid;
+    place-items: center;
+
+    width: 48px;
+    height: 48px;
+
+    border-radius: 14px;
+
+    background: var(--soft, #eaf5ff);
+    color: var(--blue, #1687e8);
+}
+
+
+.home-check-card h3 {
+    margin: 18px 0 8px;
+
+    color: var(--ink, #10243a);
+
+    font-size: 1.3rem;
+}
+
+
+.home-check-card > p {
+    margin: 0 0 18px;
+
+    color: var(--muted, #64748b);
+
+    line-height: 1.6;
+}
+
+
+.home-check-card ul {
+    display: grid;
+
+    gap: 10px;
+
+    margin: auto 0 0;
+    padding: 18px 0 0;
+
+    border-top: 1px solid var(--line, #dce6ef);
+
+    list-style: none;
+}
+
+
+.home-check-card li {
+    position: relative;
+
+    padding-left: 22px;
+
+    color: var(--ink, #10243a);
+
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+
+.home-check-card li::before {
+    content: "✓";
+
+    position: absolute;
+    left: 0;
+
+    color: var(--blue, #1687e8);
+
+    font-weight: 900;
+}
+
+
+/* ---------------------------------------------------------
+   How PreClear handles what it checks
+   --------------------------------------------------------- */
+
+.home-assurance {
+    display: grid;
+
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    gap: 22px;
+
+    max-width: 1180px;
+
+    margin: 34px auto 0;
+    padding: 28px;
+
+    border-radius: var(--radius, 22px);
+
+    background: var(--bg, #f5f9fc);
+}
+
+
+.home-assurance div {
+    display: grid;
+
+    gap: 6px;
+}
+
+
+.home-assurance strong {
+    color: var(--navy, #073b70);
+
+    font-size: 1rem;
+}
+
+
+.home-assurance span {
+    color: var(--muted, #64748b);
+
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+
+
+.home-checks .checker-disclaimer {
+    max-width: 1180px;
+}
+
+
+@media (max-width: 1080px) {
+    .home-checks-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+
+@media (max-width: 800px) {
+    .home-assurance {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+@media (max-width: 620px) {
+    .home-checks {
+        padding: 60px 20px;
+    }
+
+    .home-checks-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -5,7 +5,7 @@ Pricing | PreClear Business
 {% endblock %}
 
 {% block meta_description %}
-Choose the PreClear Business plan that fits your organization. Start with Small Business or Enterprise protection with monthly or annual billing.
+Choose the PreClear Business plan that fits your organization. Check files, links, emails and QR codes with Small Business or Enterprise plans, billed monthly or annually.
 {% endblock %}
 
 {% block content %}
@@ -29,6 +29,13 @@ Choose the PreClear Business plan that fits your organization. Start with Small 
             monthly or annual billing.
         </p>
 
+        <p>
+            Every check counts as one analysis, whether it's
+            a file, a link, a saved email, or a QR code. An
+            email's attachments and links are included in
+            that email's single analysis.
+        </p>
+
     </div>
 
 
@@ -49,8 +56,8 @@ Choose the PreClear Business plan that fits your organization. Start with Small 
 
                 <p>
                     Protection, evidence, and visibility
-                    for organizations handling external
-                    files every day.
+                    for organizations handling outside
+                    files, links, and email every day.
                 </p>
 
             </div>
@@ -76,6 +83,9 @@ Choose the PreClear Business plan that fits your organization. Start with Small 
 
 
             <ul>
+                <li>
+                    File, link, email, and QR code checks
+                </li>
                 <li>
                     {{ small_business_plan["analysis_limit"] }}
                     analyses per month
@@ -226,6 +236,9 @@ Choose the PreClear Business plan that fits your organization. Start with Small 
 
 
             <ul>
+                <li>
+                    File, link, email, and QR code checks
+                </li>
                 <li>
                     {{ enterprise_plan["analysis_limit"] }}
                     analyses per month

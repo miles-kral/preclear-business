@@ -1,0 +1,20 @@
+Authentication-Results: mx.google.com; spf=pass smtp.mailfrom=gmail.com;
+ dkim=pass header.i=@gmail.com; dmarc=pass (p=NONE) header.from=gmail.com
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com.
+ [209.85.220.41]) by mx.google.com
+From: "Rocky Mountain Supply Billing" <rmsupply.billing@gmail.com>
+Reply-To: accounts@rmsupply-payments.co
+To: office@acme.com
+Subject: URGENT: Updated banking details for invoice #4471
+Message-ID: <abc@mail.gmail.com>
+Date: Thu, 19 Nov 2026 14:02:00 -0700
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Hello,
+
+Please note our bank account details have changed. Kindly send today's paymen=
+t to the new account below.
+
+Thanks
