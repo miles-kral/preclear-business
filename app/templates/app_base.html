@@ -55,13 +55,26 @@
         rel="stylesheet"
         href="/static/css/preclear-business.css"
     >
+
+    <link
+        rel="stylesheet"
+        href="/static/css/app-nav.css"
+    >
+
+    <script
+        src="/static/js/app-nav.js"
+        defer
+    ></script>
 </head>
 
 <body class="business-app-body">
 
     <div class="business-app-shell">
 
-        <aside class="business-sidebar">
+        <aside
+            class="business-sidebar"
+            id="business-sidebar"
+        >
 
             <div class="business-sidebar__brand">
 
@@ -80,6 +93,18 @@
                         <span>Business</span>
                     </span>
                 </a>
+
+                <button
+                    class="business-app-nav-toggle"
+                    type="button"
+                    aria-label="Open menu"
+                    aria-expanded="false"
+                    aria-controls="business-sidebar"
+                >
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
 
             </div>
 

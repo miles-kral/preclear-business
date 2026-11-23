@@ -1,0 +1,84 @@
+/* Phone menu for the signed-in app. On narrow screens the sidebar
+   collapses to a header bar; this button opens it to show every page. */
+
+.business-app-nav-toggle {
+    display: none;
+}
+
+
+@media (max-width: 760px) {
+
+    .business-sidebar__brand {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 12px;
+    }
+
+
+    .business-app-nav-toggle {
+        display: grid;
+        align-content: center;
+        justify-items: center;
+
+        gap: 4px;
+
+        width: 44px;
+        height: 44px;
+
+        padding: 0;
+
+        border: 1px solid var(--color-border, #e4e7ec);
+        border-radius: 12px;
+
+        background: #ffffff;
+
+        cursor: pointer;
+    }
+
+
+    .business-app-nav-toggle span {
+        display: block;
+
+        width: 20px;
+        height: 2px;
+
+        border-radius: 2px;
+
+        background: #101828;
+
+        transition:
+            transform 0.18s ease,
+            opacity 0.18s ease;
+    }
+
+
+    .business-app-nav-toggle[aria-expanded="true"] span:nth-child(1) {
+        transform: translateY(6px) rotate(45deg);
+    }
+
+    .business-app-nav-toggle[aria-expanded="true"] span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .business-app-nav-toggle[aria-expanded="true"] span:nth-child(3) {
+        transform: translateY(-6px) rotate(-45deg);
+    }
+
+
+    /* Open: show the organization, every page link, and the account
+       area with Settings and Log Out. */
+    .business-sidebar--open .business-sidebar__organization {
+        display: block;
+    }
+
+    .business-sidebar--open .business-sidebar__nav {
+        display: grid;
+    }
+
+    .business-sidebar--open .business-sidebar__bottom {
+        display: block;
+    }
+
+}
