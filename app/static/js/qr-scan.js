@@ -6,10 +6,22 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("business-qr-form");
     const input = document.getElementById("business-qr-input");
     const button = document.getElementById("business-qr-button");
+    const buttonText = document.getElementById("business-qr-button-text");
     const status = document.getElementById("business-qr-status");
 
     if (!form || !input) {
         return;
+    }
+
+    const defaultButtonText = buttonText.textContent;
+    const defaultStatus = status.textContent;
+
+    function resetScan() {
+        input.value = "";
+        button.classList.remove("business-qr-button--busy");
+        button.removeAttribute("aria-disabled");
+        buttonText.textContent = defaultButtonText;
+        status.textContent = defaultStatus;
     }
 
     input.addEventListener("change", function () {
@@ -21,11 +33,11 @@ document.addEventListener("DOMContentLoaded", function () {
         const maxBytes = Number(form.dataset.maxUploadBytes) || 0;
 
         if (maxBytes > 0 && input.files[0].size > maxBytes) {
+            resetScan();
             status.textContent =
                 "That photo is larger than " +
                 form.dataset.maxUploadMb +
                 " MB. Try again, or take a screenshot instead.";
-            input.value = "";
             return;
         }
 
@@ -35,8 +47,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
         button.classList.add("business-qr-button--busy");
         button.setAttribute("aria-disabled", "true");
-        status.textContent = "Checking the QR code...";
+        buttonText.textContent = "Checking the QR code...";
+        status.textContent =
+            "Uploading your photo. This takes a few seconds.";
 
         form.submit();
     });
+
+    // Coming back to this page (for example with the Back button), the
+    // browser can restore it exactly as it was left: photo still
+    // attached and button still busy. Start fresh instead.
+    window.addEventListener("pageshow", resetScan);
 });

@@ -68,7 +68,7 @@ document.addEventListener(
 
             } else {
                 uploadTitle.textContent =
-                    "Choose a file to analyze";
+                    "Choose a file, email or QR code image";
 
                 filename.textContent =
                     "Select a file or drag and drop it here.";
@@ -279,6 +279,32 @@ document.addEventListener(
                         );
                     }
                 );
+            }
+        );
+
+
+        // Coming back to this page (for example with the Back button),
+        // the browser can restore it exactly as it was left: the file
+        // still selected and the progress screen still showing. Clear
+        // the file and the progress screen; the environment and source
+        // choices are kept.
+        window.addEventListener(
+            "pageshow",
+            function () {
+
+                input.value = "";
+
+                updateSelectedFile();
+
+                analyzeButton.disabled = false;
+
+                overlay.hidden = true;
+
+                document.body.classList.remove(
+                    "business-analysis-overlay-open"
+                );
+
+                resetSequence();
             }
         );
 

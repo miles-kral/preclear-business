@@ -89,6 +89,7 @@ Analyze
             <form
                 id="business-qr-form"
                 class="business-analyze-form"
+                autocomplete="off"
                 method="post"
                 action="/analyze"
                 enctype="multipart/form-data"
@@ -175,7 +176,24 @@ Analyze
                     class="button button--primary business-qr-button"
                     id="business-qr-button"
                 >
-                    Take a Photo of the QR Code
+                    <svg
+                        class="business-qr-button__icon"
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                    >
+                        <path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
+                        <circle cx="12" cy="13" r="3.5" />
+                    </svg>
+
+                    <span id="business-qr-button-text">
+                        Tap Here to Take a Photo of the QR Code
+                    </span>
+
                     <input
                         id="business-qr-input"
                         class="business-visually-hidden"
@@ -191,8 +209,10 @@ Analyze
                     id="business-qr-status"
                     role="status"
                 >
-                    Fit the whole code in the photo, and don't tap
-                    anything your camera highlights.
+                    Your camera will open. Fit the whole code in the
+                    picture and take the photo. Don't tap anything your
+                    camera highlights. PreClear checks the code
+                    automatically.
                 </small>
 
             </form>
@@ -224,16 +244,14 @@ Analyze
 
                 <div>
                     <h2>
-                        Analyze a File
+                        Analyze a File, Email or QR Code
                     </h2>
 
                     <p>
-                        Select the business context,
-                        then choose the file you want
-                        PreClear to evaluate. To check an
-                        email, save it as an .eml file and
-                        upload it here. To check a QR code,
-                        upload a photo or screenshot of it.
+                        Upload a document, a saved email, or a
+                        photo, screenshot or PDF containing a QR
+                        code. PreClear recognizes what you
+                        uploaded and runs the right checks.
                     </p>
                 </div>
 
@@ -413,7 +431,7 @@ Analyze
                         </select>
 
                         <small>
-                            Where will this file be used?
+                            Where will this be used?
                         </small>
 
                     </label>
@@ -422,13 +440,13 @@ Analyze
                     <label class="business-form-field">
 
                         <span>
-                            File source
+                            Source
                         </span>
 
                         <select name="source">
 
                             <option value="email">
-                                Email attachment
+                                Email or email attachment
                             </option>
 
                             <option value="vendor">
@@ -447,6 +465,14 @@ Analyze
                                 Shared file
                             </option>
 
+                            <option value="text_message">
+                                Text message
+                            </option>
+
+                            <option value="printed">
+                                Printed sign, flyer or letter
+                            </option>
+
                             <option value="other">
                                 Other
                             </option>
@@ -454,7 +480,7 @@ Analyze
                         </select>
 
                         <small>
-                            How did the file reach your organization?
+                            How did it reach your organization?
                         </small>
 
                     </label>
@@ -492,18 +518,32 @@ Analyze
                     </span>
 
                     <strong id="business-upload-title">
-                        Choose a file or email to analyze
+                        Choose a file, email or QR code image
                     </strong>
 
                     <span id="business-upload-filename">
-                        Select a file / email or drag and drop it here.
+                        Select a file or drag and drop it here.
+                    </span>
+
+                    <span class="business-upload-zone__types">
+                        Documents and downloads · Saved emails (.eml) ·
+                        Photos, screenshots or PDFs with QR codes
                     </span>
 
                     <span class="button button--outline">
-                        Select File or Email
+                        Select File
                     </span>
 
                 </label>
+
+
+                <p class="business-upload-help">
+                    <strong>Checking an email?</strong>
+                    Save it as an .eml file first. In Gmail, open the
+                    message's three-dot menu and choose Download message.
+                    In Outlook on the web or the new Outlook, use Save as
+                    or Download.
+                </p>
 
 
                 <div class="business-analyze-form__footer">
@@ -536,7 +576,7 @@ Analyze
                         class="button button--primary"
                         type="submit"
                     >
-                        Analyze File or Email
+                        Analyze
                     </button>
 
                 </div>
@@ -966,7 +1006,7 @@ Analyze
                 </li>
 
                 <li>
-                    File source
+                    Source
                 </li>
 
             </ul>
