@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.database import Base, engine
 from app.routes import (
     pages,
     dashboard,
@@ -19,6 +18,7 @@ from app.routes import (
     billing,
     account,
     admin_evaluations,
+    trusted_domains,
 )
 
 from app import config
@@ -35,8 +35,19 @@ from app.security_headers import (
     SecurityHeadersMiddleware,
 )
 
+from app.upload_limit import (
+    UploadSizeLimitMiddleware,
+)
 
-Base.metadata.create_all(bind=engine)
+from app.services.analysis_service import (
+    MAX_UPLOAD_BYTES,
+)
+
+
+# The database schema is managed only by Alembic migrations. Run
+# "alembic upgrade head" after pulling changes; Render runs it before each
+# deploy. (The app used to create missing tables at startup, which could
+# collide with migrations.)
 
 app = FastAPI(
     title="PreClear Business",
@@ -75,6 +86,14 @@ app.add_middleware(
     same_site="lax",
     https_only=config.IS_PRODUCTION,
     max_age=60 * 60 * 8,
+)
+
+# Added last so it runs first and rejects oversized uploads before any
+# other middleware or route reads them. The extra 1 MB allows for the
+# form fields and multipart overhead that travel with the file.
+app.add_middleware(
+    UploadSizeLimitMiddleware,
+    max_body_bytes=MAX_UPLOAD_BYTES + 1024 * 1024,
 )
 
 app.mount(
@@ -141,4 +160,8 @@ app.include_router(
 
 app.include_router(
     admin_evaluations.router,
+)
+
+app.include_router(
+    trusted_domains.router,
 )

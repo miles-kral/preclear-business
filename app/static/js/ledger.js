@@ -12,6 +12,11 @@ document.addEventListener(
                 "ledger-decision-filter"
             );
 
+        const typeFilter =
+            document.getElementById(
+                "ledger-type-filter"
+            );
+
         const riskFilter =
             document.getElementById(
                 "ledger-risk-filter"
@@ -56,6 +61,11 @@ document.addEventListener(
             const decision =
                 decisionFilter.value;
 
+            const analysisType =
+                typeFilter
+                    ? typeFilter.value
+                    : "";
+
             const risk =
                 riskFilter.value;
 
@@ -82,6 +92,11 @@ document.addEventListener(
                         !decision ||
                         row.dataset.decision
                         === decision;
+
+                    const matchesType =
+                        !analysisType ||
+                        row.dataset.type
+                        === analysisType;
 
                     const matchesRisk =
                         !risk ||
@@ -122,6 +137,7 @@ document.addEventListener(
 
                     const visible =
                         matchesSearch &&
+                        matchesType &&
                         matchesDecision &&
                         matchesRisk &&
                         matchesReview;
@@ -153,6 +169,13 @@ document.addEventListener(
             applyFilters
         );
 
+        if (typeFilter) {
+            typeFilter.addEventListener(
+                "change",
+                applyFilters
+            );
+        }
+
         riskFilter.addEventListener(
             "change",
             applyFilters
@@ -167,6 +190,31 @@ document.addEventListener(
             new URLSearchParams(
                 window.location.search
             );
+
+        const typeParam =
+            urlParams.get(
+                "type"
+            );
+
+        if (
+            typeFilter
+            && typeParam
+            && Array.from(
+                typeFilter.options
+            ).some(
+                function (option) {
+                    return (
+                        option.value
+                        === typeParam
+                    );
+                }
+            )
+        ) {
+            typeFilter.value =
+                typeParam;
+
+            applyFilters();
+        }
 
         const decisionParam =
             urlParams.get(

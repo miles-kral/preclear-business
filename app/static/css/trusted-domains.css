@@ -1,0 +1,62 @@
+/* Trusted Domains settings page. Builds on the Environments page styles. */
+
+.business-trusted-form {
+    grid-template-columns:
+        minmax(180px, 1fr)
+        minmax(180px, 1fr)
+        minmax(160px, 0.7fr)
+        auto;
+}
+
+.business-trusted-form select {
+    width: 100%;
+    min-height: 42px;
+
+    padding: 0 12px;
+
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+
+    background: #ffffff;
+    color: #101828;
+
+    font: inherit;
+    font-size: 0.82rem;
+}
+
+.business-trusted-panel {
+    margin-top: 20px;
+}
+
+.business-trusted-remove {
+    padding: 6px 12px;
+
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+
+    background: #ffffff;
+    color: #b42318;
+
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.business-trusted-remove:hover {
+    border-color: #fda29b;
+    background: #fef3f2;
+}
+
+.business-trusted-note {
+    max-width: 760px;
+
+    margin: 24px auto 0;
+}
+
+@media (max-width: 900px) {
+    .business-trusted-form {
+        grid-template-columns: 1fr;
+    }
+}

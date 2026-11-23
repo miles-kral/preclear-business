@@ -98,6 +98,14 @@ def _format_datetime(
     )
 
 
+TYPE_LABELS = {
+    "file": "File",
+    "link": "Link",
+    "email": "Email",
+    "qr": "QR code",
+}
+
+
 def _safe(
     value,
 ) -> str:
@@ -1989,7 +1997,7 @@ def build_decision_ledger_pdf(
     table_rows = [
         [
             Paragraph(
-                "FILE",
+                "ITEM",
                 styles["label"],
             ),
             Paragraph(
@@ -2020,7 +2028,10 @@ def build_decision_ledger_pdf(
         table_rows.append(
             [
                 Paragraph(
-                    _safe(analysis.filename),
+                    _safe(
+                        f"{TYPE_LABELS.get(getattr(analysis, 'analysis_type', None) or 'file', 'File')}: "
+                        f"{analysis.filename}"
+                    ),
                     _fit_style(
                         analysis.filename,
                         styles["small"],

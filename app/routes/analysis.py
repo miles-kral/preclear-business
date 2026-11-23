@@ -39,6 +39,7 @@ from app.services.email_analysis import (
     analyze_email,
     looks_like_email,
 )
+from app.services.trusted_domains import load_trusted_context
 from app.services.qr_analysis import (
     analyze_qr_in_file,
     combine_with_file_result,
@@ -528,12 +529,19 @@ async def analyze_file_route(
     # A saved email (.eml) gets the email analyzer: sender, verification,
     # requests, links and attachments. If it can't be read as an email,
     # it falls back to the regular file checks.
+    # The organization's own domains and vendors, for lookalike checks.
+    trusted = load_trusted_context(
+        db,
+        current_organization.id,
+    )
+
     if looks_like_email(filename, content):
         try:
             result = await run_in_threadpool(
                 analyze_email,
                 filename=filename,
                 content=content,
+                trusted=trusted,
             )
         except InvalidEmailError:
             result = None
@@ -583,6 +591,7 @@ async def analyze_file_route(
         analyze_qr_in_file,
         content,
         result,
+        trusted=trusted,
     )
 
     if qr is not None:
@@ -688,6 +697,10 @@ async def analyze_link_route(
         result = await run_in_threadpool(
             analyze_link,
             url,
+            trusted=load_trusted_context(
+                db,
+                current_organization.id,
+            ),
         )
 
     except InvalidLinkError:

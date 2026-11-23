@@ -10,6 +10,18 @@ Subscription
 
 {% block content %}
 
+{# An organization with a live subscription changes plans in the Stripe
+   billing portal. Checkout would start a second subscription instead. #}
+{% set has_subscription = (
+    current_organization.stripe_subscription_id
+    and subscription_status in ["active", "trialing", "past_due"]
+) %}
+
+<link
+    rel="stylesheet"
+    href="/static/css/subscription.css"
+>
+
 
 <section class="business-settings-header">
 
@@ -385,7 +397,7 @@ Subscription
 
                         {% if
                             current_organization.plan == "small_business"
-                            and subscription_status == "active"
+                            and has_subscription
                         %}
 
                             <button
@@ -407,6 +419,25 @@ Subscription
                                     Manage Subscription
                                 </button>
                             </form>
+
+                        {% elif has_subscription %}
+
+                            <form
+                                method="post"
+                                action="/billing/portal"
+                            >
+                                <button
+                                    class="button button--primary"
+                                    type="submit"
+                                >
+                                    Change Plan
+                                </button>
+                            </form>
+
+                            <p class="business-subscription-plan__hint">
+                                Plan changes are made in the secure
+                                Stripe billing portal.
+                            </p>
 
                         {% else %}
 
@@ -546,6 +577,106 @@ Subscription
 
                     </ul>
 
+                    <div class="business-subscription-plan__actions">
+
+                        {% if
+                            current_organization.plan == "enterprise"
+                            and has_subscription
+                        %}
+
+                            <button
+                                class="button button--primary"
+                                type="button"
+                                disabled
+                            >
+                                Current Plan
+                            </button>
+
+                            <form
+                                method="post"
+                                action="/billing/portal"
+                            >
+                                <button
+                                    class="button button--primary"
+                                    type="submit"
+                                >
+                                    Manage Subscription
+                                </button>
+                            </form>
+
+                        {% elif has_subscription %}
+
+                            <form
+                                method="post"
+                                action="/billing/portal"
+                            >
+                                <button
+                                    class="button button--primary"
+                                    type="submit"
+                                >
+                                    Change Plan
+                                </button>
+                            </form>
+
+                            <p class="business-subscription-plan__hint">
+                                Plan changes are made in the secure
+                                Stripe billing portal.
+                            </p>
+
+                        {% else %}
+
+                            <form
+                                method="post"
+                                action="/billing/checkout"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="plan"
+                                    value="enterprise"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="billing_interval"
+                                    value="monthly"
+                                >
+
+                                <button
+                                    class="button button--primary"
+                                    type="submit"
+                                >
+                                    Choose Monthly
+                                </button>
+                            </form>
+
+                            <form
+                                method="post"
+                                action="/billing/checkout"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="plan"
+                                    value="enterprise"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="billing_interval"
+                                    value="annual"
+                                >
+
+                                <button
+                                    class="button button--primary"
+                                    type="submit"
+                                >
+                                    Choose Annual
+                                </button>
+                            </form>
+
+                        {% endif %}
+
+                    </div>
+
                     <div class="business-subscription-plan__custom">
 
                         <strong>
@@ -559,9 +690,8 @@ Subscription
                         </p>
 
                         <a
-                            class="button button--outline"
+                            class="button button--outline business-subscription-plan__sales-link"
                             href="/contact"
-                            class="business-subscription-plan__sales-link"
                         >
                             Contact Sales
                         </a>

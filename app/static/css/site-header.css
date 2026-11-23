@@ -48,3 +48,36 @@
     }
 
 }
+
+
+/* Inside the open mobile menu, show every link. Older rules in
+   preclear-business.css hide the navigation links below 920px and the
+   Log In link below 640px, which left phones with only the Start Small
+   Business button and no way to reach the login page. */
+@media (max-width: 1180px) {
+
+    /* Solid, so page text doesn't show through the open menu. */
+    .business-mobile-menu {
+        background: #ffffff;
+    }
+
+    .business-mobile-menu .business-header__nav {
+        display: flex;
+    }
+
+    .business-mobile-menu .business-header__login {
+        display: block;
+    }
+
+    .business-mobile-menu .business-header__actions {
+        margin-left: 0;
+    }
+
+    .business-mobile-menu .business-header__actions .button {
+        padding-left: 18px;
+        padding-right: 18px;
+
+        font-size: 0.95rem;
+    }
+
+}

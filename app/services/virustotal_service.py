@@ -1,11 +1,27 @@
 from __future__ import annotations
 
 import ipaddress
+import json
+import logging
 import re
+from datetime import datetime, timedelta, timezone
 
 import requests
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import VIRUSTOTAL_API_KEY
+
+
+logger = logging.getLogger("uvicorn.error")
+
+# How long a VirusTotal answer is reused before asking again. Results for
+# known items change slowly; "not found yet" is rechecked sooner because
+# new threats get added. Errors are never cached.
+CACHE_TTL_FOUND = timedelta(hours=24)
+CACHE_TTL_NOT_FOUND = timedelta(hours=6)
+
+# Cached rows older than this are deleted.
+CACHE_MAX_AGE = timedelta(days=7)
 
 
 VIRUSTOTAL_API_BASE = "https://www.virustotal.com/api/v3"
@@ -99,6 +115,91 @@ def _get_report(url: str) -> dict:
         }
 
 
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
+def _cached_report(
+    kind: str,
+    key: str,
+    url: str,
+) -> dict:
+    """
+    Returns a recent cached result for this file or host if there is one,
+    otherwise asks VirusTotal and caches the answer. The cache is only an
+    optimization: if it can't be read or written, the lookup still works.
+    """
+    # Imported here so this module has no import-time database dependency.
+    from app.database import SessionLocal
+    from app.models import ReputationCache
+
+    now = datetime.now(timezone.utc)
+
+    try:
+        with SessionLocal() as db:
+            row = (
+                db.query(ReputationCache)
+                .filter(
+                    ReputationCache.kind == kind,
+                    ReputationCache.lookup_key == key,
+                )
+                .first()
+            )
+
+            if row is not None:
+                cached = json.loads(row.result_json)
+                ttl = (
+                    CACHE_TTL_FOUND
+                    if cached.get("found")
+                    else CACHE_TTL_NOT_FOUND
+                )
+                if now - _as_utc(row.fetched_at) < ttl:
+                    cached["cached"] = True
+                    return cached
+
+    except (SQLAlchemyError, ValueError) as error:
+        logger.warning("Reputation cache read failed: %s", error)
+
+    result = _get_report(url)
+
+    # Only real answers are cached; outages and rate limits are not.
+    if not result.get("available"):
+        return result
+
+    try:
+        with SessionLocal() as db:
+            row = (
+                db.query(ReputationCache)
+                .filter(
+                    ReputationCache.kind == kind,
+                    ReputationCache.lookup_key == key,
+                )
+                .first()
+            )
+
+            if row is None:
+                row = ReputationCache(kind=kind, lookup_key=key)
+                db.add(row)
+
+            row.result_json = json.dumps(result)
+            row.fetched_at = now
+
+            db.query(ReputationCache).filter(
+                ReputationCache.fetched_at < now - CACHE_MAX_AGE
+            ).delete(synchronize_session=False)
+
+            db.commit()
+
+    except SQLAlchemyError as error:
+        # Another request may have cached the same item at the same
+        # moment; either way the lookup result is still returned.
+        logger.warning("Reputation cache write failed: %s", error)
+
+    return result
+
+
 def lookup_file_hash(
     sha256: str,
 ) -> dict:
@@ -109,7 +210,18 @@ def lookup_file_hash(
             "error": "invalid_hash",
         }
 
-    return _get_report(f"{VIRUSTOTAL_API_URL}/{sha256}")
+    if not VIRUSTOTAL_API_KEY:
+        return {
+            "available": False,
+            "found": False,
+            "error": "not_configured",
+        }
+
+    return _cached_report(
+        "file",
+        sha256,
+        f"{VIRUSTOTAL_API_URL}/{sha256}",
+    )
 
 
 def lookup_host(
@@ -128,8 +240,19 @@ def lookup_host(
     except ValueError:
         ip = None
 
+    if not VIRUSTOTAL_API_KEY:
+        return {
+            "available": False,
+            "found": False,
+            "error": "not_configured",
+        }
+
     if ip is not None:
-        return _get_report(f"{VIRUSTOTAL_API_BASE}/ip_addresses/{ip}")
+        return _cached_report(
+            "host",
+            str(ip),
+            f"{VIRUSTOTAL_API_BASE}/ip_addresses/{ip}",
+        )
 
     if not HOSTNAME_PATTERN.match(host):
         return {
@@ -138,4 +261,8 @@ def lookup_host(
             "error": "invalid_host",
         }
 
-    return _get_report(f"{VIRUSTOTAL_API_BASE}/domains/{host}")
+    return _cached_report(
+        "host",
+        host,
+        f"{VIRUSTOTAL_API_BASE}/domains/{host}",
+    )

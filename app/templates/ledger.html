@@ -10,6 +10,25 @@ Decision Ledger
 
 {% block content %}
 
+<link
+    rel="stylesheet"
+    href="/static/css/analysis-types.css"
+>
+
+{% set type_labels = {
+    "file": "File",
+    "link": "Link",
+    "email": "Email",
+    "qr": "QR code",
+} %}
+
+{% set do_not_labels = {
+    "file": "Do Not Open",
+    "link": "Do Not Visit",
+    "email": "Do Not Trust",
+    "qr": "Do Not Scan",
+} %}
+
 <section class="business-ledger-header">
 
     <div>
@@ -23,8 +42,8 @@ Decision Ledger
         </h1>
 
         <p class="page-description">
-            Review every PreClear Trust Decision recorded
-            for your organization.
+            Review every PreClear Trust Decision recorded for
+            your organization's files, links, emails and QR codes.
         </p>
 
     </div>
@@ -43,7 +62,7 @@ Decision Ledger
                 class="button button--primary"
                 href="/analyze"
             >
-                Analyze a File
+                New Analysis
             </a>
         {% endif %}
     </div>
@@ -113,7 +132,7 @@ Decision Ledger
     <article class="card business-ledger-summary-card business-ledger-summary-card--danger">
 
         <span>
-            Do Not Open
+            Do Not Proceed
         </span>
 
         <strong class="business-ledger-summary-card__value">
@@ -155,13 +174,39 @@ Decision Ledger
             <input
                 id="ledger-search"
                 type="search"
-                placeholder="Search files, users, environments..."
+                placeholder="Search items, users, environments..."
             >
 
         </div>
 
 
         <div class="business-ledger-filters">
+
+            <select
+                id="ledger-type-filter"
+                aria-label="Filter by type"
+            >
+                <option value="">
+                    All types
+                </option>
+
+                <option value="file">
+                    Files
+                </option>
+
+                <option value="link">
+                    Links
+                </option>
+
+                <option value="email">
+                    Emails
+                </option>
+
+                <option value="qr">
+                    QR codes
+                </option>
+            </select>
+
 
             <select id="ledger-decision-filter">
                 <option value="">
@@ -177,7 +222,7 @@ Decision Ledger
                 </option>
 
                 <option value="DO_NOT_OPEN">
-                    Do Not Open
+                    Do Not Proceed
                 </option>
             </select>
 
@@ -232,7 +277,7 @@ Decision Ledger
                 <thead>
                     <tr>
                         <th>
-                            File
+                            Item
                         </th>
 
                         <th>
@@ -272,15 +317,19 @@ Decision Ledger
                     {% for record in ledger_records %}
 
                         {% set analysis = record.analysis %}
+                        {% set analysis_type = analysis.analysis_type or "file" %}
 
                         <tr
                             class="business-ledger-row"
                             data-decision="{{ analysis.decision }}"
                             data-risk="{{ analysis.risk_level }}"
                             data-review="{{ analysis.review_status or 'open' }}"
+                            data-type="{{ analysis_type }}"
                             data-created-at="{{ analysis.created_at.isoformat() }}"
                             data-search="
                                 {{ analysis.filename }}
+                                {{ analysis.target or '' }}
+                                {{ type_labels.get(analysis_type, 'File') }}
                                 {{ analysis.source or '' }}
                                 {{ analysis.environment.name if analysis.environment else '' }}
                                 {{ analysis.user.name if analysis.user else '' }}
@@ -361,7 +410,8 @@ Decision Ledger
                                         </strong>
 
                                         <span>
-                                            {{ analysis.risk_level|title }} Risk
+                                            {{ type_labels.get(analysis_type, "File") }}
+                                            · {{ analysis.risk_level|title }} Risk
                                         </span>
 
                                     </div>
@@ -387,7 +437,7 @@ Decision Ledger
                                 {% else %}
 
                                     <span class="business-ledger-badge business-ledger-badge--danger">
-                                        Do Not Open
+                                        {{ do_not_labels.get(analysis_type, "Do Not Open") }}
                                     </span>
 
                                 {% endif %}
@@ -524,7 +574,7 @@ Decision Ledger
                     class="button button--primary"
                     href="/analyze"
                 >
-                    Analyze Your First File
+                    Run Your First Analysis
                 </a>
             {% endif %}
 

@@ -1,0 +1,272 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Trusted Domains | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Trusted Domains
+{% endblock %}
+
+{% block content %}
+
+<link
+    rel="stylesheet"
+    href="/static/css/trusted-domains.css"
+>
+
+{% macro domain_list(entries, empty_text) %}
+
+    {% if entries %}
+
+        <div class="business-environment-list">
+
+            {% for entry in entries %}
+
+                <div class="business-environment-row">
+
+                    <div class="business-environment-row__identity">
+
+                        <div class="business-environment-icon">
+                            <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M3 12h18" />
+                                <path d="M12 3a14 14 0 0 1 0 18" />
+                                <path d="M12 3a14 14 0 0 0 0 18" />
+                            </svg>
+                        </div>
+
+                        <div>
+                            <strong>
+                                {{ entry.label }}
+                            </strong>
+                            <span>
+                                {{ entry.domain }} and its subdomains
+                            </span>
+                        </div>
+
+                    </div>
+
+                    {% if can_manage %}
+
+                        <div class="business-environment-row__actions">
+                            <form
+                                method="post"
+                                action="/settings/trusted-domains/{{ entry.id }}/delete"
+                            >
+                                <button
+                                    class="business-trusted-remove"
+                                    type="submit"
+                                >
+                                    Remove
+                                </button>
+                            </form>
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <div class="business-environments-empty">
+            <p>
+                {{ empty_text }}
+            </p>
+        </div>
+
+    {% endif %}
+
+{% endmacro %}
+
+
+<section class="business-environments-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Organization settings
+        </p>
+
+        <h1 class="page-title">
+            Trusted Domains
+        </h1>
+
+        <p class="page-description">
+            List your own domains and the vendors you pay or work with.
+            PreClear then flags lookalikes, such as acrne-supply.com posing
+            as acme-supply.com, in links, emails and QR codes, and
+            recognizes genuine email from the companies you trust.
+        </p>
+
+    </div>
+
+</section>
+
+
+{% if message %}
+
+    <div
+        class="
+            business-team-message
+            {% if message.type == 'error' %}
+                business-team-message--error
+            {% else %}
+                business-team-message--success
+            {% endif %}
+        "
+    >
+        <span>
+            {{ message.text }}
+        </span>
+    </div>
+
+{% endif %}
+
+
+{% if can_manage %}
+
+    <section class="card business-environment-create">
+
+        <div class="business-environment-create__intro">
+
+            <h2>
+                Add a Trusted Domain
+            </h2>
+
+            <p>
+                Enter a domain, or paste a web or email address from the
+                company. Subdomains are covered automatically.
+            </p>
+
+        </div>
+
+        <form
+            class="business-environment-form business-trusted-form"
+            method="post"
+            action="/settings/trusted-domains"
+        >
+
+            <div>
+                <label for="trusted-domain">
+                    Domain
+                </label>
+                <input
+                    id="trusted-domain"
+                    name="domain"
+                    type="text"
+                    placeholder="acme-supply.com"
+                    maxlength="300"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    required
+                >
+            </div>
+
+            <div>
+                <label for="trusted-label">
+                    Company name
+                </label>
+                <input
+                    id="trusted-label"
+                    name="label"
+                    type="text"
+                    placeholder="Acme Supply"
+                    maxlength="120"
+                >
+            </div>
+
+            <div>
+                <label for="trusted-kind">
+                    Type
+                </label>
+                <select
+                    id="trusted-kind"
+                    name="kind"
+                >
+                    <option value="vendor">
+                        Vendor or partner
+                    </option>
+                    <option value="own">
+                        Our organization
+                    </option>
+                </select>
+            </div>
+
+            <button
+                class="button button--primary"
+                type="submit"
+            >
+                Add Domain
+            </button>
+
+        </form>
+
+    </section>
+
+{% endif %}
+
+
+<section class="card business-environments-panel business-trusted-panel">
+
+    <div class="business-environments-panel__header">
+        <div>
+            <h2>
+                Our Organization
+            </h2>
+            <p>
+                Your own domains. Lookalikes of these are a common way to
+                impersonate your staff and leadership.
+            </p>
+        </div>
+    </div>
+
+    {{ domain_list(
+        own_domains,
+        "No organization domains yet. Add the domain your team's email addresses use.",
+    ) }}
+
+</section>
+
+
+<section class="card business-environments-panel business-trusted-panel">
+
+    <div class="business-environments-panel__header">
+        <div>
+            <h2>
+                Vendors and Partners
+            </h2>
+            <p>
+                The companies that send you invoices, payment requests and
+                documents. {{ entry_count }} of {{ max_entries }} domains used.
+            </p>
+        </div>
+    </div>
+
+    {{ domain_list(
+        vendor_domains,
+        "No vendors yet. Start with the companies that invoice you most often.",
+    ) }}
+
+</section>
+
+
+<p class="checker-disclaimer business-trusted-note">
+    Trusting a domain doesn't mark its email or links as safe. PreClear
+    still checks them, and still advises confirming payment changes by
+    phone, because vendor email accounts are sometimes taken over.
+</p>
+
+{% endblock %}

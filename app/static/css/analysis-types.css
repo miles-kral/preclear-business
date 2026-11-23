@@ -1,0 +1,24 @@
+/* Analysis type labels (File, Link, Email, QR code) in the Decision
+   Ledger and on the dashboard. */
+
+.business-ledger-type {
+    color: var(--color-text, #172033);
+
+    font-weight: 700;
+}
+
+.business-dashboard-decision__body .business-ledger-type {
+    display: block;
+
+    margin-top: 2px;
+
+    font-size: 0.75rem;
+    font-weight: 600;
+
+    color: #475467;
+}
+
+/* Four filters need room to wrap on narrower screens. */
+.business-ledger-filters {
+    flex-wrap: wrap;
+}

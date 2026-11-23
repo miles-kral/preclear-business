@@ -1,0 +1,16 @@
+/* Subscription settings additions. */
+
+.business-subscription-plan__hint {
+    margin: 0;
+
+    color: #667085;
+
+    font-size: 0.78rem;
+
+    text-align: center;
+}
+
+/* Room between the Enterprise plan buttons and "Need more capacity?". */
+.business-subscription-plan__actions + .business-subscription-plan__custom {
+    margin-top: 18px;
+}

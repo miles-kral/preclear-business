@@ -509,6 +509,98 @@ def _check_authentication(
         )
 
 
+def _check_trusted_sender(
+    assessment: _Assessment,
+    details: dict,
+    trusted,
+) -> None:
+    """
+    Compares the sender with the organization's own domains and trusted
+    vendors. Mail that really comes from a trusted vendor is recognized,
+    mail that only pretends to is called out, and lookalike domains are
+    flagged as the likely start of invoice fraud.
+    """
+    if not trusted:
+        return
+
+    from_domain = details.get("from_domain") or ""
+    from_address = details.get("from_address") or ""
+    auth = details.get("authentication") or {}
+
+    entry = trusted.match(from_domain) if from_domain else None
+
+    if entry is not None:
+        details["trusted_sender"] = {"label": entry.label, "kind": entry.kind}
+
+        failed = (
+            auth.get("dmarc") == "fail"
+            or auth.get("compauth") == "fail"
+            or (
+                auth.get("spf") in {"fail", "softfail"}
+                and auth.get("dkim") != "pass"
+            )
+        )
+
+        if failed:
+            assessment.flag(
+                "HIGH",
+                f"The email claims to come from {entry.label} "
+                f"({entry.domain}), {entry.description}, but sender "
+                "verification failed. Someone may be impersonating them.",
+            )
+        elif auth.get("dmarc") == "pass":
+            assessment.note(
+                f"The email was verified as coming from {entry.label} "
+                f"({entry.domain}), {entry.description}."
+            )
+        else:
+            assessment.note(
+                f"The email appears to come from {entry.label} "
+                f"({entry.domain}), {entry.description}, but the "
+                "receiving mail server didn't record a verification "
+                "result, so PreClear couldn't confirm it."
+            )
+
+    elif from_domain:
+        lookalike = trusted.lookalike(from_domain)
+
+        if lookalike is not None:
+            target = lookalike.entry
+            assessment.flag(
+                "HIGH",
+                f"The sender's domain {from_domain} imitates "
+                f"{target.label} ({target.domain}), {target.description}. "
+                f"It {lookalike.reason}. Lookalike sender domains are how "
+                "most invoice fraud starts.",
+            )
+        else:
+            name = (details.get("from_name") or "").lower()
+            for candidate in trusted.entries:
+                label = candidate.label.lower()
+                if len(label) >= 4 and re.search(
+                    rf"(?<![a-z0-9]){re.escape(label)}(?![a-z0-9])", name
+                ):
+                    assessment.flag(
+                        "MEDIUM",
+                        f"The sender's name says {candidate.label}, but the "
+                        f"email came from {from_address}, not "
+                        f"{candidate.domain}.",
+                    )
+                    break
+
+    reply_to = details.get("reply_to") or ""
+    if "@" in reply_to:
+        reply_domain = _registered(reply_to.rsplit("@", 1)[-1])
+        reply_lookalike = trusted.lookalike(reply_domain)
+        if reply_lookalike is not None:
+            target = reply_lookalike.entry
+            assessment.flag(
+                "HIGH",
+                f"Replies would go to {reply_to}, at a domain that "
+                f"imitates {target.label} ({target.domain}).",
+            )
+
+
 def _check_requests(
     assessment: _Assessment,
     subject: str,
@@ -532,6 +624,14 @@ def _check_requests(
                 "The message also pushes you to act quickly. Pressure "
                 "plus a request is the pattern behind most email scams."
             )
+
+    if "payment_change" in found and details.get("trusted_sender"):
+        label = details["trusted_sender"]["label"]
+        assessment.note(
+            f"Even genuine accounts at trusted companies are sometimes "
+            f"taken over. Confirm any change to payment details by calling "
+            f"{label} at a number you already have."
+        )
 
     if "payment_change" in found and details.get("free_email"):
         assessment.flag(
@@ -566,6 +666,7 @@ def _check_links(
     text_urls: list[str],
     details: dict,
     lookup_budget: int,
+    trusted=None,
 ) -> int:
     """Analyzes every link. Returns the reputation budget left over."""
     candidates: list[tuple[str, str]] = []
@@ -592,7 +693,11 @@ def _check_links(
 
     for href, text in candidates[:MAX_LINKS_ANALYZED]:
         try:
-            result = analyze_link(href, check_reputation=False)
+            result = analyze_link(
+                href,
+                check_reputation=False,
+                trusted=trusted,
+            )
         except InvalidLinkError:
             continue
 
@@ -626,7 +731,11 @@ def _check_links(
         looked_up.add(host)
         lookup_budget -= 1
         try:
-            item["result"] = analyze_link(item["href"], check_reputation=True)
+            item["result"] = analyze_link(
+                item["href"],
+                check_reputation=True,
+                trusted=trusted,
+            )
         except InvalidLinkError:
             pass
 
@@ -693,6 +802,7 @@ def _check_attachments(
     assessment: _Assessment,
     attachments: list[EmailMessage],
     details: dict,
+    trusted=None,
 ) -> int:
     """Scans attachments. Returns how many reputation lookups were used."""
     stored = []
@@ -749,7 +859,12 @@ def _check_attachments(
 
         budget = 1 if lookups_used < REPUTATION_LOOKUP_BUDGET - 1 else 0
         qr = (
-            analyze_qr_in_file(payload, result, reputation_lookups=budget)
+            analyze_qr_in_file(
+                payload,
+                result,
+                reputation_lookups=budget,
+                trusted=trusted,
+            )
             if payload
             else None
         )
@@ -822,6 +937,7 @@ def _check_attachments(
 def analyze_email(
     filename: str,
     content: bytes,
+    trusted=None,
 ) -> dict:
     """
     Analyzes a saved email. Blocking (attachment scans and VirusTotal
@@ -908,6 +1024,7 @@ def analyze_email(
 
     _check_sender(assessment, message, details)
     _check_authentication(assessment, message, details)
+    _check_trusted_sender(assessment, details, trusted)
     _check_requests(assessment, subject, body_text, details)
 
     if form_actions:
@@ -939,7 +1056,12 @@ def analyze_email(
             "inspect it."
         )
 
-    lookups_used = _check_attachments(assessment, attachments, details)
+    lookups_used = _check_attachments(
+        assessment,
+        attachments,
+        details,
+        trusted,
+    )
 
     # Addresses typed in the plain-text body. Links in HTML were already
     # collected from the actual link targets.
@@ -951,6 +1073,7 @@ def analyze_email(
         text_urls,
         details,
         REPUTATION_LOOKUP_BUDGET - lookups_used,
+        trusted,
     )
 
     if not assessment.reasons:

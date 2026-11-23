@@ -2,7 +2,15 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -890,4 +898,109 @@ class PasswordResetToken(Base):
         DateTime(timezone=True),
         default=utc_now,
         nullable=False,
+    )
+
+
+class TrustedDomain(Base):
+    """
+    A domain an organization trusts: its own, or a key vendor's. PreClear
+    uses these to spot lookalikes (acrne-supply.com for acme-supply.com)
+    and to recognize genuine mail from known senders.
+    """
+
+    __tablename__ = "trusted_domains"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "domain",
+            name="uq_trusted_domains_organization_domain",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+    )
+
+    organization_id: Mapped[int] = mapped_column(
+        ForeignKey("organizations.id"),
+        nullable=False,
+        index=True,
+    )
+
+    # The registered domain, lowercase, e.g. "acme-supply.com".
+    domain: Mapped[str] = mapped_column(
+        String(253),
+        nullable=False,
+    )
+
+    # Who the domain belongs to, e.g. "Acme Supply".
+    label: Mapped[str] = mapped_column(
+        String(120),
+        nullable=False,
+    )
+
+    # "own" for the organization's own domains, "vendor" for others.
+    kind: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="vendor",
+    )
+
+    created_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+    )
+
+
+class ReputationCache(Base):
+    """
+    Recent VirusTotal results, keyed by a file fingerprint or a host name.
+    These are public reputation results, shared across organizations, so
+    a lookup made for one customer saves quota for everyone.
+    """
+
+    __tablename__ = "reputation_cache"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "kind",
+            "lookup_key",
+            name="uq_reputation_cache_kind_key",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+    )
+
+    # "file" (SHA-256) or "host" (domain or IP address).
+    kind: Mapped[str] = mapped_column(
+        String(10),
+        nullable=False,
+    )
+
+    lookup_key: Mapped[str] = mapped_column(
+        String(253),
+        nullable=False,
+    )
+
+    result_json: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        index=True,
     )

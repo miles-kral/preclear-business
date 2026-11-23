@@ -10,6 +10,25 @@ Dashboard
 
 {% block content %}
 
+<link
+    rel="stylesheet"
+    href="/static/css/analysis-types.css"
+>
+
+{% set type_labels = {
+    "file": "File",
+    "link": "Link",
+    "email": "Email",
+    "qr": "QR code",
+} %}
+
+{% set do_not_labels = {
+    "file": "Do Not Open",
+    "link": "Do Not Visit",
+    "email": "Do Not Trust",
+    "qr": "Do Not Scan",
+} %}
+
 <section class="business-dashboard-header">
 
     <div>
@@ -36,7 +55,7 @@ Dashboard
                 class="button button--primary"
                 href="/analyze"
             >
-                Analyze a File
+                New Analysis
             </a>
         {% endif %}
 
@@ -135,7 +154,7 @@ Dashboard
         </p>
 
         <p class="business-dashboard-status__description">
-            Files reviewed before internal access.
+            Files, links, emails and QR codes checked.
         </p>
 
     </a>
@@ -179,7 +198,7 @@ Dashboard
         </p>
 
         <p class="business-dashboard-status__description">
-            Files cleared by PreClear analysis.
+            Items cleared by PreClear analysis.
         </p>
 
     </a>
@@ -221,7 +240,7 @@ Dashboard
         </p>
 
         <p class="business-dashboard-status__description">
-            Files requiring additional verification.
+            Items requiring additional verification.
         </p>
 
     </a>
@@ -255,7 +274,7 @@ Dashboard
         </div>
 
         <p class="business-dashboard-status__label">
-            Do not open
+            Do not proceed
         </p>
 
         <p class="business-dashboard-status__value">
@@ -263,7 +282,7 @@ Dashboard
         </p>
 
         <p class="business-dashboard-status__description">
-            High-risk files stopped before trust was granted.
+            High-risk items stopped before trust was granted.
         </p>
 
     </a>
@@ -491,7 +510,7 @@ Dashboard
                     </h2>
 
                     <p>
-                        Your organizations latest analyzed files.
+                        Your organization's latest Trust Decisions.
                     </p>
 
                 </div>
@@ -597,6 +616,10 @@ Dashboard
                                         {{ analysis.filename }}
                                     </strong>
 
+                                    <span class="business-ledger-type">
+                                        {{ type_labels.get(analysis.analysis_type or "file", "File") }}
+                                    </span>
+
                                     <span>
                                         {{
                                             analysis.environment.name
@@ -646,7 +669,7 @@ Dashboard
                                                 business-dashboard-decision__label--danger
                                             "
                                         >
-                                            Do Not Open
+                                            {{ do_not_labels.get(analysis.analysis_type or "file", "Do Not Open") }}
                                         </strong>
 
                                     {% endif %}
@@ -676,7 +699,7 @@ Dashboard
                                 class="button button--primary"
                                 href="/analyze"
                             >
-                                Analyze Your First File
+                                Run Your First Analysis
                             </a>
                             {% endif %}
 
@@ -703,7 +726,7 @@ Dashboard
                     </h2>
 
                     <p>
-                        Distribution of your organizations recent file decisions.
+                        Distribution of your organization's recent Trust Decisions.
                     </p>
 
                 </div>
@@ -780,7 +803,7 @@ Dashboard
                             </strong>
 
                             <span>
-                                Do Not Open
+                                Do Not Proceed
                             </span>
                         </div>
 
@@ -814,9 +837,9 @@ Dashboard
                     {{ current_period_attention_count }}
 
                     {% if current_period_attention_count == 1 %}
-                        file required
+                        item required
                     {% else %}
-                        files required
+                        items required
                     {% endif %}
 
                     additional attention during the last 30 days.

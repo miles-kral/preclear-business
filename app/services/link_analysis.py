@@ -461,10 +461,53 @@ def _check_brand(
     return False
 
 
+def _check_trusted(
+    assessment: _Assessment,
+    registered: str,
+    details: dict,
+    trusted,
+) -> bool:
+    """
+    Compares a domain with the organization's trusted domains. Returns
+    True if the domain is itself trusted.
+    """
+    if not trusted:
+        return False
+
+    entry = trusted.match(registered)
+
+    if entry is not None:
+        details["trusted"] = {"label": entry.label, "kind": entry.kind}
+        assessment.note(
+            f"This link goes to {registered}, which your organization "
+            f"lists as trusted ({entry.label})."
+        )
+        return True
+
+    lookalike = trusted.lookalike(registered)
+
+    if lookalike is not None:
+        entry = lookalike.entry
+        details["imitates_trusted"] = {
+            "label": entry.label,
+            "domain": entry.domain,
+        }
+        assessment.flag(
+            "HIGH",
+            f"The domain {registered} imitates {entry.label} "
+            f"({entry.domain}), {entry.description}. It "
+            f"{lookalike.reason}. This is how invoice and payment fraud "
+            "usually starts.",
+        )
+
+    return False
+
+
 def _check_host(
     assessment: _Assessment,
     host: str,
     details: dict,
+    trusted=None,
 ) -> None:
     # IP addresses instead of names.
     try:
@@ -572,6 +615,11 @@ def _check_host(
         details["shared_hosting"] = True
 
     readable_name = _decode_host(extracted.domain)
+
+    # A domain the organization explicitly trusts skips the generic brand
+    # and wording checks; the structural checks above still apply.
+    if _check_trusted(assessment, registered, details, trusted):
+        return
 
     impersonates = _check_brand(
         assessment,
@@ -700,6 +748,7 @@ def _assess(
     link: str,
     details: dict,
     depth: int,
+    trusted=None,
 ) -> _Assessment:
     assessment = _Assessment()
 
@@ -804,7 +853,9 @@ def _assess(
 
         try:
             inner_link, _ = normalize_link(inner)
-            inner_assessment = _assess(inner_link, inner_details, depth + 1)
+            inner_assessment = _assess(
+                inner_link, inner_details, depth + 1, trusted
+            )
         except InvalidLinkError:
             assessment.flag(
                 "MEDIUM",
@@ -821,7 +872,7 @@ def _assess(
         assessment.absorb(inner_assessment, "")
         return assessment
 
-    _check_host(assessment, host, details)
+    _check_host(assessment, host, details, trusted)
     _check_path(assessment, parts.path)
 
     encoded_count = len(re.findall(r"%[0-9a-fA-F]{2}", parts.path))
@@ -837,7 +888,7 @@ def _assess(
             try:
                 inner_link, _ = normalize_link(inner)
                 inner_assessment = _assess(
-                    inner_link, inner_details, depth + 1
+                    inner_link, inner_details, depth + 1, trusted
                 )
             except InvalidLinkError:
                 continue
@@ -923,6 +974,7 @@ def _check_reputation(
 def analyze_link(
     raw_link: str,
     check_reputation: bool = True,
+    trusted=None,
 ) -> dict:
     """
     Analyzes a link without visiting it. Blocking (VirusTotal lookup), so
@@ -934,7 +986,7 @@ def analyze_link(
 
     details: dict = {}
 
-    assessment = _assess(link, details, depth=0)
+    assessment = _assess(link, details, depth=0, trusted=trusted)
 
     if "invisible" in input_notes:
         assessment.flag(

@@ -245,9 +245,13 @@ def _wifi_fields(payload: str) -> dict:
     return fields
 
 
-def _link_item(url: str, check_reputation: bool) -> dict:
+def _link_item(url: str, check_reputation: bool, trusted=None) -> dict:
     try:
-        result = analyze_link(url, check_reputation=check_reputation)
+        result = analyze_link(
+            url,
+            check_reputation=check_reputation,
+            trusted=trusted,
+        )
     except InvalidLinkError:
         return {
             "kind": "text",
@@ -282,7 +286,11 @@ def _link_item(url: str, check_reputation: bool) -> dict:
     }
 
 
-def analyze_payload(payload: str, check_reputation: bool = True) -> dict:
+def analyze_payload(
+    payload: str,
+    check_reputation: bool = True,
+    trusted=None,
+) -> dict:
     """
     Explains what a QR code would do. Returns a dict with kind, display
     (safe to store), risk_level, reasons and summary.
@@ -401,7 +409,7 @@ def analyze_payload(payload: str, check_reputation: bool = True) -> dict:
             ],
         }
         for url in URL_IN_TEXT.findall(text)[:3]:
-            link = _link_item(url, check_reputation)
+            link = _link_item(url, check_reputation, trusted)
             if RISK_ORDER[link["risk_level"]] > RISK_ORDER[item["risk_level"]]:
                 item["risk_level"] = link["risk_level"]
             item["reasons"] += [f"Link inside it: {r}" for r in link["reasons"][:2]]
@@ -449,10 +457,10 @@ def analyze_payload(payload: str, check_reputation: bool = True) -> dict:
                 "summary": "Opens a map location.",
                 "reasons": ["This code opens a location in a map app."],
             }
-        return _link_item(text, check_reputation)
+        return _link_item(text, check_reputation, trusted)
 
     if re.match(r"^[a-z0-9-]+(\.[a-z0-9-]+)+(/\S*)?$", lower):
-        return _link_item(text, check_reputation)
+        return _link_item(text, check_reputation, trusted)
 
     # Plain text, possibly with links inside.
     item = {
@@ -463,7 +471,7 @@ def analyze_payload(payload: str, check_reputation: bool = True) -> dict:
         "reasons": ["This code contains plain text, shown below."],
     }
     for url in URL_IN_TEXT.findall(text)[:3]:
-        link = _link_item(url, check_reputation)
+        link = _link_item(url, check_reputation, trusted)
         if RISK_ORDER[link["risk_level"]] > RISK_ORDER[item["risk_level"]]:
             item["risk_level"] = link["risk_level"]
         item["reasons"] += [f"Link inside it: {r}" for r in link["reasons"][:2]]
@@ -473,6 +481,7 @@ def analyze_payload(payload: str, check_reputation: bool = True) -> dict:
 def _explain_payloads(
     located: list[tuple[int | None, str]],
     reputation_lookups: int,
+    trusted=None,
 ) -> tuple[list[dict], str]:
     codes = []
     risk = "LOW"
@@ -481,6 +490,7 @@ def _explain_payloads(
         item = analyze_payload(
             payload,
             check_reputation=reputation_lookups > 0,
+            trusted=trusted,
         )
         if item["kind"] == "link" and reputation_lookups > 0:
             reputation_lookups -= 1
@@ -498,6 +508,7 @@ def _explain_payloads(
 def analyze_qr_image(
     content: bytes,
     reputation_lookups: int = 3,
+    trusted=None,
 ) -> dict:
     """
     Decodes and explains every QR code in an image. Returns
@@ -508,6 +519,7 @@ def analyze_qr_image(
     codes, risk = _explain_payloads(
         [(None, payload) for payload in payloads],
         reputation_lookups,
+        trusted,
     )
 
     return {
@@ -521,11 +533,12 @@ def analyze_qr_image(
 def analyze_qr_pdf(
     content: bytes,
     reputation_lookups: int = 3,
+    trusted=None,
 ) -> dict:
     """Decodes and explains QR codes on the first pages of a PDF."""
     located, problem, pages_checked = decode_pdf_qr_codes(content)
 
-    codes, risk = _explain_payloads(located, reputation_lookups)
+    codes, risk = _explain_payloads(located, reputation_lookups, trusted)
 
     return {
         "codes": codes,
@@ -540,13 +553,14 @@ def analyze_qr_in_file(
     content: bytes,
     file_result: dict,
     reputation_lookups: int = 3,
+    trusted=None,
 ) -> dict | None:
     """Checks an image or PDF for QR codes. Returns None for other files."""
     if is_image_result(file_result):
-        return analyze_qr_image(content, reputation_lookups)
+        return analyze_qr_image(content, reputation_lookups, trusted)
 
     if is_pdf_result(file_result):
-        return analyze_qr_pdf(content, reputation_lookups)
+        return analyze_qr_pdf(content, reputation_lookups, trusted)
 
     return None
 
