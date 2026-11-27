@@ -51,7 +51,11 @@ document.addEventListener("DOMContentLoaded", function () {
         status.textContent =
             "Uploading your photo. This takes a few seconds.";
 
-        form.submit();
+        if (window.PreClearProgress) {
+            window.PreClearProgress.show("qr", form);
+        } else {
+            form.submit();
+        }
     });
 
     // Coming back to this page (for example with the Back button), the

@@ -42,12 +42,6 @@ document.addEventListener(
                 "analysis-progress-fill"
             );
 
-        const steps =
-            Array.from(
-                document.querySelectorAll(
-                    ".analysis-step"
-                )
-            );
 
 
         function updateSelectedFile() {
@@ -142,10 +136,118 @@ document.addEventListener(
         );
 
 
-        function resetSequence() {
+        // The progress screen, shared by every check on this page. Every
+        // step plays once, then the form is sent and the result page
+        // replaces this one as soon as it's ready. Raise STEP_MS to slow
+        // the steps down, or lower it to speed them up.
+        const STEP_MS = 650;
+        const START_DELAY_MS = 150;
+        const FINAL_HOLD_MS = 400;
+        const overlayTitle =
+            document.getElementById("analysis-overlay-title");
 
-            progressFill.style.width =
-                "0%";
+        const overlayDescription =
+            document.getElementById("analysis-overlay-description");
+
+        const stepList =
+            document.getElementById("analysis-overlay-steps");
+
+        const PROGRESS_TEXT = {
+            file: {
+                title: "Analyzing your file…",
+                description:
+                    "PreClear is reviewing the file and preparing " +
+                    "your organization's Trust Decision.",
+                steps: [
+                    "Creating secure file fingerprint",
+                    "Inspecting file characteristics",
+                    "Evaluating trust indicators",
+                    "Recording organizational evidence",
+                    "Preparing Trust Decision",
+                ],
+            },
+            qr: {
+                title: "Checking your QR code…",
+                description:
+                    "PreClear is decoding the code and checking what " +
+                    "it contains, without opening it.",
+                steps: [
+                    "Uploading the photo",
+                    "Decoding the QR code",
+                    "Checking what the code contains",
+                    "Checking links without visiting them",
+                    "Preparing Trust Decision",
+                ],
+            },
+            email: {
+                title: "Checking your email…",
+                description:
+                    "PreClear is checking who really sent the email, " +
+                    "what it asks for, and everything inside it.",
+                steps: [
+                    "Reading the email's original",
+                    "Verifying the sender",
+                    "Checking the wording for scam patterns",
+                    "Checking links and attachments",
+                    "Preparing Trust Decision",
+                ],
+            },
+            text: {
+                title: "Checking your message…",
+                description:
+                    "PreClear is checking the message's wording and " +
+                    "links. The message isn't stored.",
+                steps: [
+                    "Reading the message",
+                    "Checking the wording for scam patterns",
+                    "Checking links without visiting them",
+                    "Preparing Trust Decision",
+                ],
+            },
+            link: {
+                title: "Checking your link…",
+                description:
+                    "PreClear is examining the address without " +
+                    "visiting it.",
+                steps: [
+                    "Reading the address",
+                    "Comparing it with known brands and your trusted domains",
+                    "Checking its reputation",
+                    "Preparing Trust Decision",
+                ],
+            },
+        };
+
+        let steps = [];
+        let sequenceTimer = null;
+
+        function buildSteps(labels) {
+            stepList.textContent = "";
+
+            labels.forEach(
+                function (label) {
+                    const item = document.createElement("li");
+                    item.className = "analysis-step";
+
+                    const indicator = document.createElement("span");
+                    indicator.className = "business-analysis-step-indicator";
+
+                    item.appendChild(indicator);
+                    item.appendChild(document.createTextNode(" " + label));
+                    stepList.appendChild(item);
+                }
+            );
+
+            steps = Array.from(stepList.querySelectorAll(".analysis-step"));
+        }
+
+        function resetSequence() {
+            if (sequenceTimer) {
+                window.clearTimeout(sequenceTimer);
+                sequenceTimer = null;
+            }
+
+            progressFill.style.width = "0%";
 
             steps.forEach(
                 function (step) {
@@ -157,74 +259,89 @@ document.addEventListener(
             );
         }
 
-
         function runSequence() {
-
             resetSequence();
 
-            const stepDuration = 850;
-
+            const stepDuration = STEP_MS;
             let index = 0;
 
-
             function nextStep() {
-
                 if (index > 0) {
-
-                    steps[index - 1]
-                        .classList.remove(
-                            "business-analysis-step--active"
-                        );
-
-                    steps[index - 1]
-                        .classList.add(
-                            "business-analysis-step--complete"
-                        );
-                }
-
-
-                if (index >= steps.length) {
-
-                    progressFill.style.width =
-                        "100%";
-
-                    window.setTimeout(
-                        function () {
-                            form.submit();
-                        },
-                        700
-                    );
-
-                    return;
-                }
-
-
-                steps[index]
-                    .classList.add(
+                    steps[index - 1].classList.remove(
                         "business-analysis-step--active"
                     );
+                    steps[index - 1].classList.add(
+                        "business-analysis-step--complete"
+                    );
+                }
 
-
-                const percentage =
-                    ((index + 1) / steps.length)
-                    * 100;
+                steps[index].classList.add(
+                    "business-analysis-step--active"
+                );
 
                 progressFill.style.width =
-                    percentage + "%";
+                    ((index + 1) / steps.length) * 100 + "%";
 
-
-                index += 1;
-
-
-                window.setTimeout(
-                    nextStep,
-                    stepDuration
-                );
+                // The last step stays active until the result arrives.
+                if (index < steps.length - 1) {
+                    index += 1;
+                    sequenceTimer = window.setTimeout(nextStep, stepDuration);
+                }
             }
-
 
             nextStep();
         }
+
+        function completeAllSteps() {
+            if (sequenceTimer) {
+                window.clearTimeout(sequenceTimer);
+                sequenceTimer = null;
+            }
+
+            steps.forEach(
+                function (step) {
+                    step.classList.remove("business-analysis-step--active");
+                    step.classList.add("business-analysis-step--complete");
+                }
+            );
+
+            progressFill.style.width = "100%";
+        }
+
+        function showProgress(kind, formToSend) {
+            const text = PROGRESS_TEXT[kind] || PROGRESS_TEXT.file;
+
+            overlayTitle.textContent = text.title;
+            overlayDescription.textContent = text.description;
+            buildSteps(text.steps);
+
+            overlay.hidden = false;
+            document.body.classList.add("business-analysis-overlay-open");
+
+            window.requestAnimationFrame(
+                function () {
+                    sequenceTimer = window.setTimeout(runSequence, START_DELAY_MS);
+                }
+            );
+
+            if (formToSend) {
+                window.setTimeout(
+                    function () {
+                        completeAllSteps();
+                        formToSend.submit();
+                    },
+                    START_DELAY_MS
+                    + steps.length * STEP_MS
+                    + FINAL_HOLD_MS
+                );
+            }
+        }
+
+        // Used by the QR, email, text and link forms (qr-scan.js and
+        // paste-forms.js).
+        window.PreClearProgress = { show: showProgress };
+
+        buildSteps(PROGRESS_TEXT.file.steps);
 
 
         form.addEventListener(
@@ -238,8 +355,6 @@ document.addEventListener(
                     return;
                 }
 
-                event.preventDefault();
-
                 const maxBytes =
                     Number(form.dataset.maxUploadBytes) || 0;
 
@@ -247,6 +362,8 @@ document.addEventListener(
                     maxBytes > 0 &&
                     input.files[0].size > maxBytes
                 ) {
+                    event.preventDefault();
+
                     uploadTitle.textContent =
                         "File too large to analyze";
 
@@ -263,22 +380,11 @@ document.addEventListener(
                     return;
                 }
 
+                event.preventDefault();
+
                 analyzeButton.disabled = true;
 
-                overlay.hidden = false;
-
-                document.body.classList.add(
-                    "business-analysis-overlay-open"
-                );
-
-                window.requestAnimationFrame(
-                    function () {
-                        window.setTimeout(
-                            runSequence,
-                            250
-                        );
-                    }
-                );
+                showProgress("file", form);
             }
         );
 

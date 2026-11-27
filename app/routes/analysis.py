@@ -37,7 +37,14 @@ from app.services.analysis_service import (
 from app.services.email_analysis import (
     InvalidEmailError,
     analyze_email,
+    email_from_saved_page,
     looks_like_email,
+    starts_with_headers,
+)
+from app.services.text_analysis import (
+    MAX_TEXT_CHARS,
+    InvalidTextError,
+    analyze_text,
 )
 from app.services.trusted_domains import load_trusted_context
 from app.services.qr_analysis import (
@@ -100,6 +107,63 @@ UPLOAD_ERROR_MESSAGES = {
     "invalid_request": (
         "The analysis request was incomplete. Choose an "
         "environment and source, then try again."
+    ),
+}
+
+# Pasted email source. Starlette limits each form field to 1 MB by
+# default, far too small for an email with attachments, so this route
+# reads its form with a higher per-field limit. The request-size
+# middleware (just over 50 MB) stays the outer cap, and form encoding
+# adds some size, which the text limit leaves room for.
+MAX_PASTED_EMAIL_CHARS = 15 * 1024 * 1024
+MAX_PASTED_EMAIL_FIELD_BYTES = 50 * 1024 * 1024
+
+# After an error, the pasted text is shown again so it can be fixed, up
+# to this size.
+MAX_PASTED_EMAIL_REDISPLAY = 200_000
+
+EMAIL_PASTE_ERRORS = {
+    "empty": (
+        "Paste the email's original first. In Outlook, open the email, "
+        "choose More actions (...), then View, then View message source, "
+        "and copy everything it shows."
+    ),
+    "not_original": (
+        "That looks like the email's message, not its original. The "
+        "original starts with lines such as Received:, From: and "
+        "Subject:. In Outlook, open the email, choose More actions (...), "
+        "then View, then View message source, and copy everything."
+    ),
+    "too_large": (
+        "That's too much text for PreClear to check. Make sure you copied "
+        "a single email."
+    ),
+    "unreadable": (
+        "PreClear couldn't read that as an email. Copy the original "
+        "again, from its first line to its last, and paste it here."
+    ),
+    "invalid_request": (
+        "The check was incomplete. Choose an environment and source, "
+        "then try again."
+    ),
+}
+
+ALLOWED_TEXT_SOURCES = {
+    "text_message",
+    "chat",
+    "email",
+    "other",
+}
+
+TEXT_ERRORS = {
+    "empty": "Paste the text message first.",
+    "too_long": (
+        f"That's longer than PreClear checks ({MAX_TEXT_CHARS:,} "
+        "characters). Paste a single message."
+    ),
+    "invalid_request": (
+        "The check was incomplete. Choose an environment and source, "
+        "then try again."
     ),
 }
 
@@ -270,7 +334,33 @@ def analyze_page(
             current_organization,
         )
     )
-    
+
+    return _render_analyze_page(
+        request,
+        db,
+        current_user,
+        current_organization,
+        current_membership,
+        analysis_usage_status,
+    )
+
+
+def _render_analyze_page(
+    request: Request,
+    db: Session,
+    current_user: User,
+    current_organization: Organization,
+    current_membership: Membership,
+    analysis_usage_status: dict | None = None,
+    extra: dict | None = None,
+    status_code: int = 200,
+):
+    if analysis_usage_status is None:
+        analysis_usage_status = get_analysis_usage_status(
+            db,
+            current_organization,
+        )
+
     environments = (
         db.query(Environment)
         .filter(
@@ -284,25 +374,35 @@ def analyze_page(
         .all()
     )
 
+    context = {
+        "active_page": "analyze",
+        "current_user": current_user,
+        "current_organization": current_organization,
+        "current_membership": current_membership,
+        "environments": environments,
+        "analysis_usage_status": analysis_usage_status,
+        "upload_error": UPLOAD_ERROR_MESSAGES.get(
+            request.query_params.get("error", "")
+        ),
+        "link_error": LINK_ERROR_MESSAGES.get(
+            request.query_params.get("error", "")
+        ),
+        "email_paste_error": None,
+        "email_paste_text": "",
+        "text_error": None,
+        "text_message": "",
+        "max_text_chars": MAX_TEXT_CHARS,
+        "max_upload_bytes": MAX_UPLOAD_BYTES,
+        "max_upload_mb": MAX_UPLOAD_MB,
+    }
+
+    context.update(extra or {})
+
     return templates.TemplateResponse(
         request=request,
         name="analyze.html",
-        context={
-            "active_page": "analyze",
-            "current_user": current_user,
-            "current_organization": current_organization,
-            "current_membership": current_membership,
-            "environments": environments,
-            "analysis_usage_status": analysis_usage_status,
-            "upload_error": UPLOAD_ERROR_MESSAGES.get(
-                request.query_params.get("error", "")
-            ),
-            "link_error": LINK_ERROR_MESSAGES.get(
-                request.query_params.get("error", "")
-            ),
-            "max_upload_bytes": MAX_UPLOAD_BYTES,
-            "max_upload_mb": MAX_UPLOAD_MB,
-        },
+        context=context,
+        status_code=status_code,
     )
 
 
@@ -535,12 +635,20 @@ async def analyze_file_route(
         current_organization.id,
     )
 
+    email_content = None
+
     if looks_like_email(filename, content):
+        email_content = content
+    else:
+        # A browser-saved "Show original" page holds the email inside it.
+        email_content = email_from_saved_page(content)
+
+    if email_content is not None:
         try:
             result = await run_in_threadpool(
                 analyze_email,
                 filename=filename,
-                content=content,
+                content=email_content,
                 trusted=trusted,
             )
         except InvalidEmailError:
@@ -626,6 +734,243 @@ async def analyze_file_route(
             else "file_analysis"
         ),
         description=description,
+    )
+
+    return RedirectResponse(
+        url=f"/analysis/{analysis.id}",
+        status_code=303,
+    )
+
+
+@router.post("/analyze/email")
+async def analyze_pasted_email_route(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(
+        get_current_user
+    ),
+    current_organization: Organization | None = Depends(
+        get_current_organization
+    ),
+    current_membership: Membership | None = Depends(
+        get_current_membership
+    ),
+):
+    """
+    Checks an email's original pasted as text, for email services that
+    can't save an email as a file. The text is read but never stored.
+    """
+    redirect = _access_redirect(
+        current_user,
+        current_organization,
+        current_membership,
+    )
+
+    if redirect is not None:
+        return redirect
+
+    form = await request.form(
+        max_fields=10,
+        max_part_size=MAX_PASTED_EMAIL_FIELD_BYTES,
+    )
+
+    text = str(form.get("email_source") or "")
+    source = str(form.get("source") or "")
+
+    try:
+        environment = int(form.get("environment") or 0)
+    except ValueError:
+        environment = 0
+
+    def fail(code: str):
+        keep = (
+            text
+            if code not in {"too_large"}
+            and len(text) <= MAX_PASTED_EMAIL_REDISPLAY
+            else ""
+        )
+        return _render_analyze_page(
+            request,
+            db,
+            current_user,
+            current_organization,
+            current_membership,
+            extra={
+                "email_paste_error": EMAIL_PASTE_ERRORS[code],
+                "email_paste_text": keep,
+            },
+            status_code=400,
+        )
+
+    if source not in ALLOWED_SOURCES:
+        return fail("invalid_request")
+
+    environment_record = _get_environment(
+        db,
+        current_organization,
+        environment,
+    )
+
+    if environment_record is None:
+        return fail("invalid_request")
+
+    if not text.strip():
+        return fail("empty")
+
+    if len(text) > MAX_PASTED_EMAIL_CHARS:
+        return fail("too_large")
+
+    data = text.lstrip("\ufeff \t\r\n").encode("utf-8", "replace")
+
+    if not starts_with_headers(data):
+        unwrapped = email_from_saved_page(data)
+        if unwrapped is None:
+            return fail("not_original")
+        data = unwrapped
+
+    analysis_usage_status = get_analysis_usage_status(
+        db,
+        current_organization,
+    )
+
+    trusted = load_trusted_context(
+        db,
+        current_organization.id,
+    )
+
+    # Parsing and checking an email blocks, so it runs in a worker
+    # thread to keep the server responsive for everyone else.
+    try:
+        result = await run_in_threadpool(
+            analyze_email,
+            filename="pasted-email.eml",
+            content=data,
+            trusted=trusted,
+        )
+    except InvalidEmailError:
+        return fail("unreadable")
+
+    result["details"]["input"] = "pasted"
+    result["details_json"] = json.dumps(result["details"])
+
+    sender = (
+        result["details"].get("from_address")
+        or "an unknown sender"
+    )
+
+    analysis = _record_analysis(
+        db,
+        organization=current_organization,
+        user=current_user,
+        environment=environment_record,
+        source=source,
+        result=result,
+        analysis_type="email",
+        usage_status=analysis_usage_status,
+        event_type="email_analysis",
+        description=(
+            f"{current_user.name} checked a pasted email "
+            f"from {sender}."
+        ),
+    )
+
+    return RedirectResponse(
+        url=f"/analysis/{analysis.id}",
+        status_code=303,
+    )
+
+
+@router.post("/analyze/text")
+async def analyze_text_route(
+    request: Request,
+    message: str = Form(""),
+    environment: int = Form(...),
+    source: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(
+        get_current_user
+    ),
+    current_organization: Organization | None = Depends(
+        get_current_organization
+    ),
+    current_membership: Membership | None = Depends(
+        get_current_membership
+    ),
+):
+    """
+    Checks a pasted text or chat message. The message is read but never
+    stored; the record keeps a short description, links and warning signs.
+    """
+    redirect = _access_redirect(
+        current_user,
+        current_organization,
+        current_membership,
+    )
+
+    if redirect is not None:
+        return redirect
+
+    def fail(code: str):
+        return _render_analyze_page(
+            request,
+            db,
+            current_user,
+            current_organization,
+            current_membership,
+            extra={
+                "text_error": TEXT_ERRORS[code],
+                "text_message": (
+                    message if len(message) <= MAX_TEXT_CHARS else ""
+                ),
+            },
+            status_code=400,
+        )
+
+    if source not in ALLOWED_TEXT_SOURCES:
+        return fail("invalid_request")
+
+    environment_record = _get_environment(
+        db,
+        current_organization,
+        environment,
+    )
+
+    if environment_record is None:
+        return fail("invalid_request")
+
+    analysis_usage_status = get_analysis_usage_status(
+        db,
+        current_organization,
+    )
+
+    trusted = load_trusted_context(
+        db,
+        current_organization.id,
+    )
+
+    try:
+        result = await run_in_threadpool(
+            analyze_text,
+            message,
+            trusted,
+        )
+    except InvalidTextError as error:
+        return fail(str(error))
+
+    analysis = _record_analysis(
+        db,
+        organization=current_organization,
+        user=current_user,
+        environment=environment_record,
+        source=source,
+        result=result,
+        analysis_type="text",
+        usage_status=analysis_usage_status,
+        event_type="text_analysis",
+        description=(
+            f"{current_user.name} checked a text message "
+            f"({result['filename'][len('Text message '):]})."
+        ),
     )
 
     return RedirectResponse(

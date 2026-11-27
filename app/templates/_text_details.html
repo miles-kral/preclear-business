@@ -1,0 +1,92 @@
+{# Warning signs and links found in a text message. The message itself is
+   never stored, so it can't be shown here. Expects analysis and details. #}
+{% set signal_names = {
+    "codes": "Asks for a sign-in code or approval",
+    "remote_access": "Asks for remote access",
+    "payment_change": "Changed payment or bank details",
+    "gift_cards": "Gift cards",
+    "boss_favor": "Private favor from a manager",
+    "account_threat": "Account locked or at risk",
+    "verify_account": "Asks to verify an account",
+    "payment_pressure": "Pressure to pay",
+    "delivery": "Delivery problem",
+    "toll_fine": "Unpaid toll or fine",
+    "tax_refund": "Tax refund or IRS",
+    "prize": "Prize or reward",
+    "tech_support": "Renewal or tech-support alert",
+    "crypto": "Cryptocurrency",
+    "family_emergency": "Someone in trouble from a new number",
+} %}
+
+<section class="business-result-section">
+    <div class="business-result-section__header">
+        <h3>
+            Message
+        </h3>
+        <p>
+            PreClear read the message to check it but didn't store it,
+            so only what was found is recorded here.
+        </p>
+    </div>
+
+    {% if details.signals %}
+        <ul class="business-email-items">
+            {% for key in details.signals %}
+                <li>
+                    <div>
+                        <strong>
+                            {{ signal_names.get(key, key|replace("_", " ")|capitalize) }}
+                        </strong>
+                    </div>
+                    <span class="business-result-risk business-result-risk--caution">
+                        Warning sign
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="page-description">
+            The wording didn't match common scams.
+        </p>
+    {% endif %}
+</section>
+
+{% if details.links %}
+    <section class="business-result-section">
+        <div class="business-result-section__header">
+            <h3>
+                Links
+            </h3>
+            <p>
+                Every link was checked without being visited. Addresses
+                are shown as text so they can't be clicked by accident.
+            </p>
+        </div>
+        <ul class="business-email-items">
+            {% for item in details.links %}
+                <li>
+                    <div>
+                        <strong>
+                            {{ item.host or "Link" }}
+                        </strong>
+                        <code>
+                            {{ item.url }}
+                        </code>
+                    </div>
+                    <span class="business-result-risk
+                        {% if item.decision == 'LOOKS_SAFE' %}business-result-risk--safe
+                        {% elif item.decision == 'USE_CAUTION' %}business-result-risk--caution
+                        {% else %}business-result-risk--danger{% endif %}">
+                        {% if item.decision == "LOOKS_SAFE" %}
+                            Looks Safe
+                        {% elif item.decision == "USE_CAUTION" %}
+                            Use Caution
+                        {% else %}
+                            Do Not Visit
+                        {% endif %}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+{% endif %}

@@ -58,3 +58,11 @@
         {{ (details.attachments or [])|length }}
     </strong>
 </div>
+<div>
+    <span>
+        Received as
+    </span>
+    <strong>
+        {{ "Pasted original" if details.input == "pasted" else "Uploaded file" }}
+    </strong>
+</div>

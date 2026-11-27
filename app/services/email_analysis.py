@@ -10,6 +10,7 @@ scanner). The email's body text is read for the analysis but not stored.
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import re
 from email import policy
@@ -19,6 +20,7 @@ from email.utils import getaddresses
 from html.parser import HTMLParser
 
 from app.services.analysis_service import analyze_file
+from app.services.message_wording import find_signals, is_urgent
 from app.services.qr_analysis import analyze_qr_in_file
 from app.services.link_analysis import (
     BRAND_DISPLAY_NAMES,
@@ -80,75 +82,6 @@ LOOKS_LIKE_ADDRESS = re.compile(
     re.IGNORECASE,
 )
 
-# What the message asks the reader to do. Each pattern pairs with a
-# plain-language reason and the three-questions habit.
-REQUEST_PATTERNS = [
-    (
-        "payment_change",
-        re.compile(
-            r"(?:(?:new|updated?|chang(?:e|ed|ing)|different)\s+"
-            r"(?:\w+\s+){0,3}(?:bank(?:ing)?|account|payment|wire|ach|"
-            r"remittance|routing)\s*(?:details|information|info|number|"
-            r"instructions)?)|(?:(?:bank(?:ing)?|account|payment|wire|"
-            r"remittance)\s+(?:details|information|instructions)\s+"
-            r"(?:\w+\s+){0,3}(?:changed|updated|new))",
-            re.IGNORECASE,
-        ),
-        "The message asks to change payment or bank details. Confirm any "
-        "change by calling the sender at a phone number you already "
-        "have, not one from this email.",
-    ),
-    (
-        "gift_cards",
-        re.compile(r"gift\s*cards?", re.IGNORECASE),
-        "The message mentions gift cards, a payment method scammers "
-        "favor because it can't be traced or reversed.",
-    ),
-    (
-        "credentials",
-        re.compile(
-            r"(?:verify|confirm|validate|update)\s+(?:your\s+)?"
-            r"(?:account|password|identity|credentials|login|mailbox)|"
-            r"(?:account|mailbox)\s+(?:has\s+been\s+|will\s+be\s+)?"
-            r"(?:suspended|locked|disabled|closed|deactivated)|"
-            r"unusual\s+sign[- ]?in|password\s+(?:expires|expired)",
-            re.IGNORECASE,
-        ),
-        "The message asks you to sign in or confirm account details. "
-        "Go to the site by typing its address yourself instead of using "
-        "a link in the email.",
-    ),
-    (
-        "codes",
-        re.compile(
-            r"(?:verification|security|one[- ]time|authentication)\s+"
-            r"code|(?:send|share|tell|read)\s+(?:me\s+|us\s+)?"
-            r"(?:the\s+)?code",
-            re.IGNORECASE,
-        ),
-        "The message mentions a verification code. Never share a code "
-        "sent to your phone or email with anyone who contacts you.",
-    ),
-    (
-        "remote_access",
-        re.compile(
-            r"quick\s*assist|anydesk|teamviewer|remote\s+(?:access|"
-            r"support|session)|share\s+your\s+screen",
-            re.IGNORECASE,
-        ),
-        "The message asks for remote access to a computer. Legitimate "
-        "IT support rarely asks for this unprompted.",
-    ),
-]
-
-URGENCY = re.compile(
-    r"\burgent(?:ly)?\b|\bimmediately\b|\basap\b|within\s+\d+\s+hours|"
-    r"\bfinal\s+(?:notice|warning)\b|\btoday\b|right\s+away|"
-    r"before\s+end\s+of\s+day",
-    re.IGNORECASE,
-)
-
-
 class InvalidEmailError(ValueError):
     """The upload could not be read as an email message."""
 
@@ -176,6 +109,77 @@ class _Assessment:
 
 
 # ------------------------------------------------------------- detection
+
+# Header names that show a block of text is an email's original source.
+KNOWN_HEADERS = {
+    "received", "from", "to", "cc", "subject", "date", "message-id",
+    "mime-version", "return-path", "reply-to", "content-type",
+    "delivered-to", "authentication-results", "dkim-signature",
+    "arc-seal", "arc-message-signature", "arc-authentication-results",
+    "received-spf", "sender", "x-received", "x-originating-ip",
+    "x-ms-exchange-organization-authas", "thread-topic", "thread-index",
+    "content-transfer-encoding", "x-mailer", "list-unsubscribe",
+}
+
+HEADER_LINE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9-]*):")
+
+# Largest saved web page searched for an email inside it.
+MAX_SAVED_PAGE_BYTES = 30 * 1024 * 1024
+
+
+def starts_with_headers(data: bytes) -> bool:
+    """
+    True when the text begins with mail headers: the first line is a
+    header, and at least 3 known header names appear before the first
+    blank line. An email is recognized by its headers, never by what its
+    body looks like (most bodies are HTML).
+    """
+    text = data[:65536].decode("utf-8", "replace").lstrip("\ufeff \t\r\n")
+    lines = text.splitlines()
+
+    if not lines or not HEADER_LINE.match(lines[0]):
+        return False
+
+    found = set()
+
+    for line in lines:
+        if not line.strip():
+            break
+        if line[0] in " \t":
+            continue  # a header continued on the next line
+        match = HEADER_LINE.match(line)
+        if not match:
+            return False
+        name = match.group(1).lower()
+        if name in KNOWN_HEADERS or name.startswith("x-"):
+            found.add(name)
+
+    return len(found) >= 3
+
+
+def email_from_saved_page(content: bytes) -> bytes | None:
+    """
+    When a browser saves an email's "Show original" page as a web page,
+    the email sits escaped inside a <pre> block. Returns the email if the
+    page holds one, otherwise None. Ordinary pages are left alone.
+    """
+    if len(content) > MAX_SAVED_PAGE_BYTES:
+        return None
+
+    head = content[:4096].lower()
+    if b"<html" not in head and b"<!doctype" not in head and b"<pre" not in head:
+        return None
+
+    page = content.decode("utf-8", "replace")
+
+    for match in re.finditer(r"<pre[^>]*>(.*?)</pre>", page, re.S | re.I):
+        inner = html.unescape(re.sub(r"<[^>]+>", "", match.group(1)))
+        candidate = inner.lstrip("\ufeff \t\r\n").encode("utf-8")
+        if starts_with_headers(candidate):
+            return candidate
+
+    return None
+
 
 
 def looks_like_email(filename: str, content: bytes) -> bool:
@@ -466,8 +470,10 @@ def _check_authentication(
         if not received:
             assessment.note(
                 "The email has no delivery information. It may have been "
-                "forwarded or copied rather than saved as the original, "
-                "so PreClear couldn't check how it was delivered."
+                "forwarded, or saved in a way that leaves out the "
+                "original details, so PreClear couldn't check how it was "
+                "delivered. To confirm the sender, paste the email's "
+                "original instead (in Outlook: View message source)."
             )
         else:
             assessment.note(
@@ -610,14 +616,23 @@ def _check_requests(
     combined = f"{subject}\n{text}"
     found = []
 
-    for key, pattern, reason in REQUEST_PATTERNS:
-        if pattern.search(combined):
-            found.append(key)
-            assessment.flag("MEDIUM", reason)
+    # Shared with the text message checker. In emails each finding is a
+    # caution; emails carry many other signals that decide the rest.
+    for signal in find_signals(combined):
+        found.append(signal.key)
+        assessment.flag("MEDIUM", signal.reason)
 
     details["requests"] = found
 
-    if URGENCY.search(combined):
+    if "gift_cards" in found and "boss_favor" in found:
+        assessment.flag(
+            "HIGH",
+            "A private, urgent favor involving gift cards is one of the most "
+            "common scams aimed at employees. Confirm with the person "
+            "directly, by phone or in person.",
+        )
+
+    if is_urgent(combined):
         details["urgent"] = True
         if found:
             assessment.note(

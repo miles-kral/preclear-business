@@ -20,6 +20,7 @@ Decision Ledger
     "link": "Link",
     "email": "Email",
     "qr": "QR code",
+    "text": "Text message",
 } %}
 
 {% set do_not_labels = {
@@ -27,6 +28,7 @@ Decision Ledger
     "link": "Do Not Visit",
     "email": "Do Not Trust",
     "qr": "Do Not Scan",
+    "text": "Do Not Trust",
 } %}
 
 <section class="business-ledger-header">
@@ -43,7 +45,8 @@ Decision Ledger
 
         <p class="page-description">
             Review every PreClear Trust Decision recorded for
-            your organization's files, links, emails and QR codes.
+            your organization's files, links, emails, text
+            messages and QR codes.
         </p>
 
     </div>
@@ -204,6 +207,10 @@ Decision Ledger
 
                 <option value="qr">
                     QR codes
+                </option>
+
+                <option value="text">
+                    Text messages
                 </option>
             </select>
 

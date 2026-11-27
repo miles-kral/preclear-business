@@ -1,0 +1,25 @@
+{# Evidence rows for a text message analysis. Expects analysis and details. #}
+<div>
+    <span>
+        Analysis type
+    </span>
+    <strong>
+        Text message
+    </strong>
+</div>
+<div>
+    <span>
+        Links checked
+    </span>
+    <strong>
+        {{ (details.links or [])|length }}
+    </strong>
+</div>
+<div>
+    <span>
+        Warning signs in the wording
+    </span>
+    <strong>
+        {{ (details.signals or [])|length }}
+    </strong>
+</div>

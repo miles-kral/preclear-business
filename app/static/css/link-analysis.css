@@ -219,3 +219,94 @@
 .business-upload-help strong {
     color: #101828;
 }
+
+
+/* Email instructions on the upload card. */
+.business-upload-help p {
+    margin: 0;
+}
+
+.business-upload-help a {
+    color: #0a3278;
+    font-weight: 700;
+}
+
+.business-upload-help details {
+    margin-top: 8px;
+}
+
+.business-upload-help summary {
+    color: #0a3278;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.business-upload-help ul {
+    display: grid;
+
+    gap: 6px;
+
+    margin: 8px 0 0;
+    padding-left: 18px;
+}
+
+
+/* Paste an Email's Original card. */
+.business-email-paste-card {
+    margin-top: 24px;
+    scroll-margin-top: 20px;
+}
+
+.business-email-paste-input {
+    width: 100%;
+    min-height: 160px;
+
+    padding: 10px 12px;
+
+    border: 1px solid var(--color-border, #d0d5dd);
+    border-radius: 10px;
+
+    background: #ffffff;
+    color: #101828;
+
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.78rem;
+    line-height: 1.5;
+
+    resize: vertical;
+}
+
+.business-email-paste-input:focus {
+    outline: none;
+
+    border-color: #0a3278;
+
+    box-shadow: 0 0 0 3px rgba(10, 50, 120, 0.1);
+}
+
+@media (max-width: 720px) {
+    .business-email-paste-card .business-analyze-context-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* Check a Text Message card. */
+.business-text-card {
+    margin-top: 24px;
+    scroll-margin-top: 20px;
+}
+
+.business-text-input {
+    min-height: 110px;
+
+    font-family: inherit;
+    font-size: 0.88rem;
+}
+
+@media (max-width: 720px) {
+    .business-text-card .business-analyze-context-grid {
+        grid-template-columns: 1fr;
+    }
+}

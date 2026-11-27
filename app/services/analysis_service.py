@@ -299,11 +299,12 @@ def _check_extension(
 
     if extension == ".msg":
         assessment.note(
-            "This is an Outlook message file (.msg). PreClear inspects "
-            "emails saved as .eml files. To check the email's sender, "
-            "links and attachments, save it as .eml (in Outlook on the "
-            "web or the new Outlook, use Download or Save as) and "
-            "upload that instead."
+            "This is an Outlook message file (.msg). To check the "
+            "email's sender, links and attachments, open the email in "
+            "Outlook on the web or the new Outlook, choose More actions "
+            "(...), then View, then View message source, and paste "
+            "everything into Paste an Email's Original on the Analyze "
+            "page."
         )
 
 

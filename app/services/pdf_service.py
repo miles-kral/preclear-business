@@ -103,6 +103,7 @@ TYPE_LABELS = {
     "link": "Link",
     "email": "Email",
     "qr": "QR code",
+    "text": "Text message",
 }
 
 
@@ -164,7 +165,7 @@ def _decision_label(
     if decision == "DO_NOT_OPEN" and analysis_type == "link":
         return "Do Not Visit"
 
-    if decision == "DO_NOT_OPEN" and analysis_type == "email":
+    if decision == "DO_NOT_OPEN" and analysis_type in {"email", "text"}:
         return "Do Not Trust"
 
     if decision == "DO_NOT_OPEN" and analysis_type == "qr":
@@ -502,6 +503,68 @@ def _item_table(
     return table
 
 
+TEXT_SIGNAL_NAMES = {
+    "codes": "Asks for a sign-in code or approval",
+    "remote_access": "Asks for remote access",
+    "payment_change": "Changed payment or bank details",
+    "gift_cards": "Gift cards",
+    "boss_favor": "Private favor from a manager",
+    "account_threat": "Account locked or at risk",
+    "verify_account": "Asks to verify an account",
+    "payment_pressure": "Pressure to pay",
+    "delivery": "Delivery problem",
+    "toll_fine": "Unpaid toll or fine",
+    "tax_refund": "Tax refund or IRS",
+    "prize": "Prize or reward",
+    "tech_support": "Renewal or tech-support alert",
+    "crypto": "Cryptocurrency",
+    "family_emergency": "Someone in trouble from a new number",
+}
+
+
+def _append_text_evidence(
+    story,
+    details: dict,
+    styles,
+) -> None:
+    """Adds warning signs and links for a text message. The message itself
+    is never stored, so it can't appear here."""
+    signals = details.get("signals") or []
+    links = details.get("links") or []
+
+    story.append(
+        _field_table(
+            [
+                ("Analysis Type", "Text message"),
+                (
+                    "Warning Signs",
+                    "; ".join(TEXT_SIGNAL_NAMES.get(key, key) for key in signals)
+                    or "None in the wording",
+                ),
+                ("Links Checked", len(links)),
+                ("Message Stored", "No (read for the check only)"),
+            ],
+            styles,
+        )
+    )
+
+    if links:
+        story.append(Spacer(1, 12))
+        story.append(
+            _item_table(
+                "LINK (SHOWN AS TEXT, NOT VISITED)",
+                [
+                    (
+                        item.get("url") or item.get("host") or "link",
+                        _decision_label(item.get("decision") or "", "link"),
+                    )
+                    for item in links
+                ],
+                styles,
+            )
+        )
+
+
 def _append_qr_evidence(
     story,
     details: dict,
@@ -567,6 +630,12 @@ def _append_email_evidence(
                 ("Reply-To", details.get("reply_to") or "Same as sender"),
                 ("Sender Verification", verification),
                 ("Sent", details.get("date") or "Unknown"),
+                (
+                    "Received As",
+                    "Pasted original"
+                    if details.get("input") == "pasted"
+                    else "Uploaded file",
+                ),
                 ("Links Checked", len(details.get("links") or [])),
                 (
                     "Attachments Scanned",
@@ -636,6 +705,10 @@ def build_evidence_record_pdf(
 
     is_qr = (
         getattr(analysis, "analysis_type", "file") == "qr"
+    )
+
+    is_text = (
+        getattr(analysis, "analysis_type", "file") == "text"
     )
 
     details = _load_details(analysis)
@@ -920,6 +993,7 @@ def build_evidence_record_pdf(
                 ),
                 (
                     "Subject" if is_email
+                    else "Message" if is_text
                     else (
                         "QR Code" if is_qr
                         else ("Link" if is_link else "Filename")
@@ -1033,7 +1107,7 @@ def build_evidence_record_pdf(
 
     # Emails have no single reputation lookup; their attachments and
     # links were checked individually and appear in the rationale.
-    if not is_email and not is_qr:
+    if not is_email and not is_qr and not is_text:
 
         story.append(
             Paragraph(
@@ -1294,6 +1368,7 @@ def build_evidence_record_pdf(
     story.append(
         Paragraph(
             "Email Evidence" if is_email
+            else "Text Message Evidence" if is_text
             else (
                 "QR Code Evidence" if is_qr
                 else ("Link Evidence" if is_link else "File Evidence")
@@ -1305,6 +1380,14 @@ def build_evidence_record_pdf(
     if is_email:
 
         _append_email_evidence(
+            story,
+            details,
+            styles,
+        )
+
+    elif is_text:
+
+        _append_text_evidence(
             story,
             details,
             styles,
@@ -1499,7 +1582,7 @@ def build_evidence_record_pdf(
                     if is_link
                     else (
                         "SHA-256 FINGERPRINT OF THE MESSAGE"
-                        if is_email
+                        if is_email or is_text
                         else (
                             "SHA-256 FINGERPRINT OF THE FILE"
                             if is_qr

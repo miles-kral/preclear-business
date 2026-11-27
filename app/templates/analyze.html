@@ -30,8 +30,8 @@ Analyze
         </h1>
 
         <p class="page-description">
-            Check an outside file, link, email or QR code
-            before it enters your organization's trusted
+            Check an outside file, link, email, text message or QR
+            code before it enters your organization's trusted
             environment.
             PreClear records the Trust Decision and
             preserves the evidence for your organization.
@@ -537,13 +537,52 @@ Analyze
                 </label>
 
 
-                <p class="business-upload-help">
-                    <strong>Checking an email?</strong>
-                    Save it as an .eml file first. In Gmail, open the
-                    message's three-dot menu and choose Download message.
-                    In Outlook on the web or the new Outlook, use Save as
-                    or Download.
-                </p>
+                <div class="business-upload-help">
+
+                    <p>
+                        <strong>Checking an email?</strong>
+                        In Outlook, open the email, choose More actions
+                        (...), then View, then View message source.
+                        Copy everything it shows into
+                        <a href="#check-email">Paste an Email's Original</a>
+                        below.
+                    </p>
+
+                    <details>
+
+                        <summary>
+                            Using Gmail, Apple Mail, Yahoo or another service?
+                        </summary>
+
+                        <ul>
+                            <li>
+                                <strong>Gmail:</strong> open the email,
+                                choose More (&#8942;), then Download
+                                message, and drop the file here.
+                            </li>
+                            <li>
+                                <strong>Apple Mail:</strong> drag the email
+                                from your inbox to the desktop, then drop
+                                that file here.
+                            </li>
+                            <li>
+                                <strong>Yahoo, AOL and most others:</strong>
+                                open the email and choose View raw message,
+                                Show original or View source (often under
+                                More or the three dots). Copy everything it
+                                shows into
+                                <a href="#check-email">Paste an Email's Original</a>.
+                            </li>
+                            <li>
+                                <strong>Don't forward it to yourself.</strong>
+                                Forwarding replaces the details PreClear
+                                needs to tell who really sent it.
+                            </li>
+                        </ul>
+
+                    </details>
+
+                </div>
 
 
                 <div class="business-analyze-form__footer">
@@ -583,6 +622,464 @@ Analyze
 
             </form>
 
+
+        </article>
+
+
+        <article
+            class="card business-analyze-card business-email-paste-card"
+            id="check-email"
+        >
+
+            <div class="business-analyze-card__header">
+
+                <div class="business-analyze-card__icon">
+
+                    <svg
+                        width="26"
+                        height="26"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <rect x="3" y="5" width="18" height="14" rx="2" />
+                        <path d="m3 7 9 6 9-6" />
+                    </svg>
+
+                </div>
+
+                <div>
+                    <h2>
+                        Paste an Email's Original
+                    </h2>
+
+                    <p>
+                        For email services that can't save an email as a
+                        file, including Outlook. The original keeps the
+                        details PreClear needs to confirm who really sent
+                        it.
+                    </p>
+                </div>
+
+            </div>
+
+
+            {% if email_paste_error %}
+
+                <div
+                    class="business-analysis-allowance business-analysis-allowance--limit"
+                    role="alert"
+                >
+
+                    <div class="business-analysis-allowance__icon">
+
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M12 8v5" />
+                            <path d="M12 17h.01" />
+                        </svg>
+
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            The email could not be checked
+                        </strong>
+
+                        <p>
+                            {{ email_paste_error }}
+                        </p>
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+
+            <form
+                id="business-email-paste-form"
+                class="business-analyze-form"
+                method="post"
+                action="/analyze/email"
+                autocomplete="off"
+            >
+
+                <label class="business-form-field">
+
+                    <span>
+                        Email original
+                    </span>
+
+                    <textarea
+                        id="business-email-paste-input"
+                        class="business-email-paste-input"
+                        name="email_source"
+                        rows="8"
+                        spellcheck="false"
+                        autocomplete="off"
+                        placeholder="Received: from mail.example.com ...&#10;From: Billing &lt;billing@example.com&gt;&#10;Subject: Your invoice&#10;..."
+                        required
+                        {% if email_paste_error %}autofocus{% endif %}
+                    >{{ email_paste_text }}</textarea>
+
+                    <small>
+                        In Outlook, open the email, choose More actions
+                        (...), then View, then View message source. Copy
+                        everything, from the first line to the last.
+                    </small>
+
+                </label>
+
+
+                <div class="business-analyze-context-grid">
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Environment
+                        </span>
+
+                        <select
+                            name="environment"
+                            required
+                        >
+
+                            {% if environments %}
+
+                                {% for environment in environments %}
+
+                                    <option value="{{ environment.id }}">
+                                        {{ environment.name }}
+                                    </option>
+
+                                {% endfor %}
+
+                            {% else %}
+
+                                <option value="" disabled selected>
+                                    No active environments available
+                                </option>
+
+                            {% endif %}
+
+                        </select>
+
+                        <small>
+                            Which part of the business received this email?
+                        </small>
+
+                    </label>
+
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Source
+                        </span>
+
+                        <select name="source">
+
+                            <option value="email">
+                                Email
+                            </option>
+
+                            <option value="vendor">
+                                Vendor or partner
+                            </option>
+
+                            <option value="customer">
+                                Customer
+                            </option>
+
+                            <option value="other">
+                                Other
+                            </option>
+
+                        </select>
+
+                        <small>
+                            Who did the email appear to come from?
+                        </small>
+
+                    </label>
+
+                </div>
+
+
+                <div class="business-analyze-form__footer">
+
+                    <div>
+
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                d="M12 3 5 6v5c0 4.5 2.8 8.6 7 10 4.2-1.4 7-5.5 7-10V6l-7-3Z"
+                            />
+                            <path d="m9 12 2 2 4-4" />
+                        </svg>
+
+                        <span>
+                            PreClear reads the email to check it but
+                            doesn't store its text.
+                        </span>
+
+                    </div>
+
+                    <button
+                        class="button button--primary"
+                        id="business-email-paste-button"
+                        type="submit"
+                    >
+                        Check Email
+                    </button>
+
+                </div>
+
+            </form>
+
+        </article>
+
+
+        <article
+            class="card business-analyze-card business-text-card"
+            id="check-text"
+        >
+
+            <div class="business-analyze-card__header">
+
+                <div class="business-analyze-card__icon">
+
+                    <svg
+                        width="26"
+                        height="26"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z" />
+                        <path d="M8 11h8M8 14h5" />
+                    </svg>
+
+                </div>
+
+                <div>
+                    <h2>
+                        Check a Text Message
+                    </h2>
+
+                    <p>
+                        Paste a text, Teams or Slack message. PreClear
+                        checks its wording and every link in it, without
+                        visiting any link.
+                    </p>
+                </div>
+
+            </div>
+
+
+            {% if text_error %}
+
+                <div
+                    class="business-analysis-allowance business-analysis-allowance--limit"
+                    role="alert"
+                >
+
+                    <div class="business-analysis-allowance__icon">
+
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M12 8v5" />
+                            <path d="M12 17h.01" />
+                        </svg>
+
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            The message could not be checked
+                        </strong>
+
+                        <p>
+                            {{ text_error }}
+                        </p>
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+
+            <form
+                id="business-text-form"
+                class="business-analyze-form"
+                method="post"
+                action="/analyze/text"
+                autocomplete="off"
+            >
+
+                <label class="business-form-field">
+
+                    <span>
+                        Message
+                    </span>
+
+                    <textarea
+                        id="business-text-input"
+                        class="business-email-paste-input business-text-input"
+                        name="message"
+                        rows="5"
+                        maxlength="{{ max_text_chars }}"
+                        autocomplete="off"
+                        placeholder="Paste the message here, including any links."
+                        required
+                        {% if text_error %}autofocus{% endif %}
+                    >{{ text_message }}</textarea>
+
+                    <small>
+                        Press and hold the message, choose Copy, then
+                        paste it here. Don't tap any links in it first.
+                    </small>
+
+                </label>
+
+
+                <div class="business-analyze-context-grid">
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Environment
+                        </span>
+
+                        <select
+                            name="environment"
+                            required
+                        >
+
+                            {% if environments %}
+
+                                {% for environment in environments %}
+
+                                    <option value="{{ environment.id }}">
+                                        {{ environment.name }}
+                                    </option>
+
+                                {% endfor %}
+
+                            {% else %}
+
+                                <option value="" disabled selected>
+                                    No active environments available
+                                </option>
+
+                            {% endif %}
+
+                        </select>
+
+                        <small>
+                            Which part of the business received this message?
+                        </small>
+
+                    </label>
+
+
+                    <label class="business-form-field">
+
+                        <span>
+                            Source
+                        </span>
+
+                        <select name="source">
+
+                            <option value="text_message">
+                                Text message
+                            </option>
+
+                            <option value="chat">
+                                Chat or Teams message
+                            </option>
+
+                            <option value="email">
+                                Email
+                            </option>
+
+                            <option value="other">
+                                Other
+                            </option>
+
+                        </select>
+
+                        <small>
+                            Where did the message arrive?
+                        </small>
+
+                    </label>
+
+                </div>
+
+
+                <div class="business-analyze-form__footer">
+
+                    <div>
+
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                d="M12 3 5 6v5c0 4.5 2.8 8.6 7 10 4.2-1.4 7-5.5 7-10V6l-7-3Z"
+                            />
+                            <path d="m9 12 2 2 4-4" />
+                        </svg>
+
+                        <span>
+                            PreClear reads the message to check it but
+                            doesn't store it.
+                        </span>
+
+                    </div>
+
+                    <button
+                        class="button button--primary"
+                        id="business-text-button"
+                        type="submit"
+                    >
+                        Check Message
+                    </button>
+
+                </div>
+
+            </form>
 
         </article>
 
@@ -835,8 +1332,8 @@ Analyze
                     </strong>
 
                     <p>
-                        An outside file, link, email or QR
-                        code reaches someone in your
+                        An outside file, link, email, text message
+                        or QR code reaches someone in your
                         organization.
                     </p>
                 </div>
@@ -1053,11 +1550,11 @@ Analyze
             PreClear analysis
         </p>
 
-        <h2>
+        <h2 id="analysis-overlay-title">
             Analyzing your file…
         </h2>
 
-        <p>
+        <p id="analysis-overlay-description">
             PreClear is reviewing the file and preparing
             your organization's Trust Decision.
         </p>
@@ -1069,7 +1566,10 @@ Analyze
             ></span>
         </div>
 
-        <ul class="business-analysis-loading__steps">
+        <ul
+            class="business-analysis-loading__steps"
+            id="analysis-overlay-steps"
+        >
             <li class="analysis-step">
                 <span class="business-analysis-step-indicator"></span>
                 Creating secure file fingerprint
@@ -1105,6 +1605,11 @@ Analyze
 
 <script
     src="/static/js/qr-scan.js"
+    defer
+></script>
+
+<script
+    src="/static/js/paste-forms.js"
     defer
 ></script>
 

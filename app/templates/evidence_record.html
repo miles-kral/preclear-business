@@ -13,8 +13,9 @@ Evidence Record
 {% set is_link = analysis.analysis_type == "link" %}
 {% set is_email = analysis.analysis_type == "email" %}
 {% set is_qr = analysis.analysis_type == "qr" %}
+{% set is_text = analysis.analysis_type == "text" %}
 
-{% if is_link or is_email or is_qr %}
+{% if is_link or is_email or is_qr or is_text %}
     <link
         rel="stylesheet"
         href="/static/css/link-analysis.css"
@@ -83,7 +84,7 @@ Evidence Record
                     Looks Safe
                 {% elif analysis.decision == "USE_CAUTION" %}
                     Use Caution
-                {% elif is_email %}
+                {% elif is_email or is_text %}
                     Do Not Trust
                 {% elif is_qr %}
                     Do Not Scan
@@ -160,7 +161,7 @@ Evidence Record
     </section>
 
 
-    {% if not is_email and not is_qr %}
+    {% if not is_email and not is_qr and not is_text %}
     <section class="business-result-section">
 
         <div class="business-result-section__header">
@@ -355,7 +356,7 @@ Evidence Record
         <div class="business-result-section__header">
 
             <h3>
-                {{ "Email Evidence" if is_email else ("QR Code Evidence" if is_qr else ("Link Evidence" if is_link else "File Evidence")) }}
+                {{ "Text Message Evidence" if is_text else "Email Evidence" if is_email else ("QR Code Evidence" if is_qr else ("Link Evidence" if is_link else "File Evidence")) }}
             </h3>
 
             <p>
@@ -372,6 +373,8 @@ Evidence Record
             {% include "_email_evidence_rows.html" %}
             {% elif is_qr %}
             {% include "_qr_evidence_rows.html" %}
+            {% elif is_text %}
+            {% include "_text_evidence_rows.html" %}
             {% elif is_link %}
             <div>
                 <span>
@@ -500,6 +503,10 @@ Evidence Record
         {% include "_qr_details.html" %}
     {% endif %}
 
+    {% if is_text %}
+        {% include "_text_details.html" %}
+    {% endif %}
+
     {% if is_link and analysis.target %}
         <section class="business-result-section">
             <div class="business-result-section__header">
@@ -590,7 +597,7 @@ Evidence Record
         <div class="business-result-hash">
 
             <span>
-                SHA-256 fingerprint{{ " of the address" if is_link else (" of the message" if is_email else (" of the file" if is_qr else "")) }}
+                SHA-256 fingerprint{{ " of the address" if is_link else (" of the message" if is_email or is_text else (" of the file" if is_qr else "")) }}
             </span>
 
             <code>
