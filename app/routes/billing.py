@@ -13,9 +13,10 @@ from sqlalchemy.orm import Session
 
 from datetime import datetime, timezone
 
-import stripe
-
+import logging
 import secrets
+
+import stripe
 
 from app.config import (
     APP_BASE_URL,
@@ -46,6 +47,27 @@ router = APIRouter()
 
 
 stripe.api_key = STRIPE_SECRET_KEY
+
+logger = logging.getLogger("uvicorn.error")
+
+# Organizations whose access is set by hand (for example PreClear's own
+# accounts). Stripe events never change these.
+MANUALLY_MANAGED_STATUSES = {
+    "internal",
+}
+
+# When a customer has several subscriptions (an old canceled one and a new
+# active one, say), the one that should decide their access, best first.
+SUBSCRIPTION_STATUS_PRIORITY = {
+    "active": 0,
+    "trialing": 1,
+    "past_due": 2,
+    "unpaid": 3,
+    "incomplete": 4,
+    "paused": 5,
+    "incomplete_expired": 6,
+    "canceled": 7,
+}
 
 
 PRICE_MAP = {
@@ -175,6 +197,15 @@ def sync_subscription_to_organization(
     if organization is None:
         return None
 
+    if organization.subscription_status in MANUALLY_MANAGED_STATUSES:
+        logger.info(
+            "Stripe sync skipped for organization %s: access is managed "
+            "manually (%s).",
+            organization.id,
+            organization.subscription_status,
+        )
+        return organization
+
     items = subscription.get(
         "items",
         {},
@@ -270,12 +301,96 @@ def sync_subscription_to_organization(
     return organization
 
 
+def _current_subscription(customer_id: str):
+    """
+    Asks Stripe for all of a customer's subscriptions and returns the one
+    that should decide their access: the best status, then the newest.
+    Raises stripe.StripeError if Stripe can't be reached.
+    """
+    subscriptions = stripe.Subscription.list(
+        customer=customer_id,
+        status="all",
+        limit=20,
+    )
+
+    if hasattr(subscriptions, "to_dict"):
+        subscriptions = subscriptions.to_dict()
+
+    candidates = list(subscriptions.get("data", []))
+
+    if not candidates:
+        return None
+
+    return min(
+        candidates,
+        key=lambda item: (
+            SUBSCRIPTION_STATUS_PRIORITY.get(item.get("status"), 9),
+            -(item.get("created") or 0),
+        ),
+    )
+
+
+def sync_customer_subscription(
+    db: Session,
+    customer_id: str | None,
+    fallback_subscription=None,
+) -> Organization | None:
+    """
+    Updates an organization from its customer's current subscription as
+    Stripe reports it now, rather than from whatever an individual event
+    says. Webhook events can arrive late or out of order, and an event for
+    an old subscription (a canceled one, say) must not override a newer
+    active one or grant access before payment.
+    """
+    if not customer_id:
+        if fallback_subscription is not None:
+            return sync_subscription_to_organization(db, fallback_subscription)
+        return None
+
+    current = _current_subscription(customer_id)
+
+    if current is None:
+        return None
+
+    return sync_subscription_to_organization(db, current)
+
+
 @router.post("/purchase/checkout")
 def create_purchase_checkout_session(
+    request: Request,
     plan: str = Form(...),
     billing_interval: str = Form(...),
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(
+        get_current_user
+    ),
+    current_organization: Organization | None = Depends(
+        get_current_organization
+    ),
+    current_membership: Membership | None = Depends(
+        get_current_membership
+    ),
 ):
+    # Someone already signed in who buys from the public pricing page
+    # would otherwise get a second, unlinked Stripe customer and a plan
+    # that never appears on their account. Their purchase goes through
+    # the account checkout instead, which also stops a second
+    # subscription if they already have one.
+    if (
+        current_user is not None
+        and current_organization is not None
+        and current_membership is not None
+    ):
+        return create_checkout_session(
+            request=request,
+            plan=plan,
+            billing_interval=billing_interval,
+            db=db,
+            current_user=current_user,
+            current_organization=current_organization,
+            current_membership=current_membership,
+        )
+
     price_id = PRICE_MAP.get(
         (
             plan,
@@ -554,6 +669,9 @@ def create_checkout_session(
             "trialing",
             "past_due",
         }
+    ) or (
+        current_organization.subscription_status
+        in MANUALLY_MANAGED_STATUSES
     ):
         return RedirectResponse(
             url="/settings/subscription",
@@ -650,14 +768,46 @@ def create_checkout_session(
         status_code=303,
     )
 
+def _sync_or_retry(db: Session, customer_id, fallback=None) -> bool:
+    """Syncs a customer's subscription. Returns False if Stripe couldn't be
+    reached, so the webhook can ask Stripe to send the event again."""
+    try:
+        sync_customer_subscription(db, customer_id, fallback)
+    except stripe.StripeError as error:
+        db.rollback()
+        logger.warning(
+            "Stripe webhook: couldn't load subscriptions for customer %s: %s",
+            customer_id,
+            error,
+        )
+        return False
+    return True
+
+
+def _retry_later() -> JSONResponse:
+    # Any non-2xx reply makes Stripe resend the event later.
+    return JSONResponse(
+        status_code=503,
+        content={
+            "received": False,
+            "error": "Temporarily unable to reach Stripe.",
+        },
+    )
+
+
 @router.post("/billing/webhook")
 async def stripe_webhook(
     request: Request,
     db: Session = Depends(get_db),
 ):
     if not STRIPE_WEBHOOK_SECRET:
+        # 503 tells Stripe to retry later, once the secret is set.
+        logger.error(
+            "Stripe webhook received but STRIPE_WEBHOOK_SECRET is not set; "
+            "the event was not processed."
+        )
         return JSONResponse(
-            status_code=500,
+            status_code=503,
             content={
                 "received": False,
                 "error": (
@@ -793,57 +943,29 @@ async def stripe_webhook(
 
                 db.commit()
 
-        else:
-
-            subscription_id = (
-                event_object.get(
-                    "subscription"
-                )
-            )
-
-            if subscription_id:
-                subscription = (
-                    stripe.Subscription.retrieve(
-                        subscription_id
-                    )
-                )
-
-                sync_subscription_to_organization(
-                    db,
-                    subscription,
-                )
+        elif event_object.get("customer"):
+            if not _sync_or_retry(db, event_object.get("customer")):
+                return _retry_later()
 
     elif event_type in {
         "customer.subscription.created",
         "customer.subscription.updated",
         "customer.subscription.deleted",
-    }:
-        sync_subscription_to_organization(
-            db,
-            event_object,
-        )
-
-    elif event_type in {
         "invoice.paid",
         "invoice.payment_failed",
     }:
-        subscription_id = (
-            event_object.get(
-                "subscription"
-            )
+        fallback = (
+            event_object
+            if event_type.startswith("customer.subscription")
+            else None
         )
 
-        if subscription_id:
-            subscription = (
-                stripe.Subscription.retrieve(
-                    subscription_id
-                )
-            )
-
-            sync_subscription_to_organization(
-                db,
-                subscription,
-            )
+        if not _sync_or_retry(
+            db,
+            event_object.get("customer"),
+            fallback,
+        ):
+            return _retry_later()
 
     return {
         "received": True,
