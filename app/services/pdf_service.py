@@ -453,12 +453,13 @@ def _item_table(
     title,
     rows,
     styles,
+    second_title="DECISION",
 ):
     """A two-column table of items (text and decision) for evidence PDFs."""
     table_rows = [
         [
             Paragraph(title, styles["label"]),
-            Paragraph("DECISION", styles["label"]),
+            Paragraph(second_title, styles["label"]),
         ]
     ]
 
@@ -1104,6 +1105,61 @@ def build_evidence_record_pdf(
 # ---------------------------------------------------------
 # THREAT INTELLIGENCE
 # ---------------------------------------------------------
+
+    # What was checked (records from before this list existed have none).
+    checks = details.get("checks") or []
+
+    if checks:
+        incomplete = [
+            item for item in checks
+            if item.get("status") in {"limited", "unavailable"}
+        ]
+
+        story.append(
+            Paragraph(
+                "What Was Checked",
+                styles["section"],
+            )
+        )
+
+        story.append(
+            Paragraph(
+                "All checks completed."
+                if not incomplete
+                else (
+                    f"Partial check: {len(checks) - len(incomplete)} of "
+                    f"{len(checks)} checks completed fully. The decision "
+                    "is based on what could be checked."
+                ),
+                styles["body"],
+            )
+        )
+
+        story.append(Spacer(1, 8))
+
+        status_labels = {
+            "done": "Done",
+            "not_needed": "Not needed",
+            "limited": "Limited",
+            "unavailable": "Unavailable",
+        }
+
+        story.append(
+            _item_table(
+                "CHECK",
+                [
+                    (
+                        f"{item.get('name')}: {item.get('note')}",
+                        status_labels.get(item.get("status"), item.get("status")),
+                    )
+                    for item in checks
+                ],
+                styles,
+                second_title="STATUS",
+            )
+        )
+
+        story.append(Spacer(1, 17))
 
     # Emails have no single reputation lookup; their attachments and
     # links were checked individually and appear in the rationale.

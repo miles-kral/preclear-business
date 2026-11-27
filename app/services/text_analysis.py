@@ -17,6 +17,12 @@ from app.services.link_analysis import (
     InvalidLinkError,
     analyze_link,
 )
+from app.services.coverage import (
+    DONE,
+    NOT_NEEDED,
+    budget_reputation_check,
+    check,
+)
 from app.services.message_wording import find_signals, is_urgent
 
 
@@ -241,6 +247,42 @@ def analyze_text(message: str, trusted=None) -> dict:
             "The message also pushes you to act quickly. Pressure plus a "
             "request is the pattern behind most scams."
         )
+
+    details["checks"] = [
+        check(
+            "Wording",
+            DONE,
+            "Checked what the message asks for against common scams.",
+        ),
+        (
+            check(
+                "Links",
+                DONE,
+                f"Checked {len(link_items)} link"
+                f"{'' if len(link_items) == 1 else 's'} without visiting "
+                f"{'it' if len(link_items) == 1 else 'them'}.",
+            )
+            if link_items
+            else check("Links", NOT_NEEDED, "The message has no links.")
+        ),
+        (
+            check(
+                "Your trusted domains",
+                DONE,
+                "Compared the links and names with your trusted domains.",
+            )
+            if trusted
+            else check(
+                "Your trusted domains",
+                NOT_NEEDED,
+                "Your organization hasn't listed trusted domains yet.",
+            )
+        ),
+        budget_reputation_check(
+            len({item["host"] for item in link_items if item.get("host")}),
+            MAX_REPUTATION_LOOKUPS,
+        ),
+    ]
 
     if link_items:
         details["links"] = [

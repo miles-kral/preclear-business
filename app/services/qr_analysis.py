@@ -15,6 +15,12 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 from PIL import Image, UnidentifiedImageError
 
+from app.services.coverage import (
+    DONE,
+    LIMITED,
+    UNAVAILABLE,
+    check,
+)
 from app.services.link_analysis import (
     InvalidLinkError,
     analyze_link,
@@ -83,11 +89,11 @@ def _read_codes(image) -> list[str]:
     """Decodes QR codes from an opened grayscale PIL image."""
     zxingcpp = _zxing()
 
-    formats = (
-        zxingcpp.BarcodeFormat.QRCode
-        | zxingcpp.BarcodeFormat.MicroQRCode
-        | zxingcpp.BarcodeFormat.RMQRCode
-    )
+    formats = [
+        zxingcpp.BarcodeFormat.QRCode,
+        zxingcpp.BarcodeFormat.MicroQRCode,
+        zxingcpp.BarcodeFormat.RMQRCode,
+    ]
 
     payloads = []
     for result in zxingcpp.read_barcodes(image, formats=formats):
@@ -581,6 +587,39 @@ def is_pdf_result(file_result: dict) -> bool:
     return file_result.get("detected_type") == "pdf"
 
 
+def _qr_check(qr: dict) -> dict:
+    """Describes the QR code search for the "What was checked" list."""
+    problem = qr.get("problem")
+    count = len(qr.get("codes") or [])
+    found = (
+        f"Found {count} QR code{'' if count == 1 else 's'} and checked "
+        "what each one contains."
+        if count
+        else "Looked for QR codes and found none."
+    )
+
+    if problem == "decoder_unavailable":
+        return check("QR codes", UNAVAILABLE, "The QR code reader isn't installed.")
+
+    if problem == "encrypted":
+        return check("QR codes", LIMITED, "The PDF is password-protected, so its pages couldn't be checked.")
+
+    if problem == "too_large":
+        return check("QR codes", LIMITED, "The image is too large to check for QR codes.")
+
+    if problem == "unreadable" and qr.get("source") != "pdf":
+        return check("QR codes", LIMITED, "The image format couldn't be read.")
+
+    if problem in {"more_pages", "unreadable"} and qr.get("source") == "pdf":
+        return check(
+            "QR codes",
+            LIMITED,
+            f"Checked the first {qr.get('pages_checked', 0)} pages. " + found,
+        )
+
+    return check("QR codes", DONE, found)
+
+
 def combine_with_file_result(
     file_result: dict,
     qr: dict,
@@ -591,6 +630,10 @@ def combine_with_file_result(
     """
     result = dict(file_result)
     codes = qr["codes"]
+
+    result["checks"] = list(file_result.get("checks") or []) + [
+        _qr_check(qr)
+    ]
 
     is_pdf = qr.get("source") == "pdf"
 

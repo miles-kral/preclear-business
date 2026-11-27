@@ -1,0 +1,51 @@
+{# "What was checked": each check and how far it got. Older records,
+   from before this list existed, don't have one, so nothing shows. #}
+{% if details.checks %}
+
+    {% set status_labels = {
+        "done": "Done",
+        "not_needed": "Not needed",
+        "limited": "Limited",
+        "unavailable": "Unavailable",
+    } %}
+
+    {% set incomplete = details.checks
+        | selectattr("status", "in", ["limited", "unavailable"])
+        | list %}
+
+    <section class="business-result-section">
+        <div class="business-result-section__header">
+            <h3>
+                What Was Checked
+            </h3>
+            <p>
+                {% if incomplete %}
+                    Partial check: {{ details.checks|length - incomplete|length }}
+                    of {{ details.checks|length }} checks completed fully.
+                    The decision is based on what could be checked.
+                {% else %}
+                    All checks completed.
+                {% endif %}
+            </p>
+        </div>
+
+        <ul class="business-email-items business-checks">
+            {% for item in details.checks %}
+                <li>
+                    <div>
+                        <strong>
+                            {{ item.name }}
+                        </strong>
+                        <small>
+                            {{ item.note }}
+                        </small>
+                    </div>
+                    <span class="business-check-status business-check-status--{{ item.status }}">
+                        {{ status_labels.get(item.status, item.status) }}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+{% endif %}

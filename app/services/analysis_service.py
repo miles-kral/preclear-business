@@ -6,6 +6,7 @@ import re
 import unicodedata
 from pathlib import Path
 
+from app.services.coverage import DONE, check, reputation_check
 from app.services.virustotal_service import (
     lookup_file_hash,
 )
@@ -527,7 +528,23 @@ def analyze_file(
             "unless its source and purpose can be independently verified."
         )
 
+    checks = [
+        check(
+            "File contents",
+            DONE,
+            "Identified what the file really is from its contents, "
+            "not its name.",
+        ),
+        check(
+            "File name",
+            DONE,
+            "Checked the extension and the name for disguises.",
+        ),
+        reputation_check(vt_result, "file fingerprint"),
+    ]
+
     return {
+        "checks": checks,
         "filename": display_name,
         "extension": extension or None,
         "mime_type": mime_type,

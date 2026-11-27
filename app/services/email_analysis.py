@@ -20,9 +20,17 @@ from email.utils import getaddresses
 from html.parser import HTMLParser
 
 from app.services.analysis_service import analyze_file
+from app.services.coverage import (
+    DONE,
+    LIMITED,
+    NOT_NEEDED,
+    budget_reputation_check,
+    check,
+)
 from app.services.message_wording import find_signals, is_urgent
 from app.services.qr_analysis import analyze_qr_in_file
 from app.services.link_analysis import (
+    ACCOUNT_WORDS,
     BRAND_DISPLAY_NAMES,
     BRAND_DOMAINS,
     BRAND_KEYWORDS,
@@ -33,6 +41,7 @@ from app.services.link_analysis import (
     _scripts_in,
     _skeleton,
     analyze_link,
+    brand_mentioned,
 )
 
 
@@ -347,7 +356,7 @@ def _brand_imitation(domain: str) -> str | None:
     tokens = [token for token in re.split(r"[.\-_]", domain) if token]
 
     for keyword, brand in BRAND_KEYWORDS.items():
-        if keyword in tokens:
+        if brand_mentioned(keyword, tokens):
             return BRAND_DISPLAY_NAMES[brand]
 
     skeleton = _skeleton(name)
@@ -421,7 +430,7 @@ def _check_sender(
             from_registered in BRAND_DOMAINS[brand_key]
             or _EXTRACT(from_domain).domain == brand_key
         )
-        if keyword in name_tokens and not official:
+        if brand_mentioned(keyword, name_tokens) and not official:
             name = BRAND_DISPLAY_NAMES[brand_key]
             assessment.flag(
                 "MEDIUM",
@@ -949,6 +958,103 @@ def _check_attachments(
 # ---------------------------------------------------------------- analysis
 
 
+def _email_checks(details: dict, attachments: list, encrypted: bool, trusted) -> list[dict]:
+    """The "What was checked" list for an email."""
+    checks = [
+        check(
+            "Sender",
+            DONE,
+            "Checked the sender, reply-to address and display name for "
+            "disguises.",
+        ),
+    ]
+
+    if details.get("authentication"):
+        checks.append(check(
+            "Sender verification",
+            DONE,
+            "Read the receiving mail server's SPF, DKIM and DMARC results.",
+        ))
+    else:
+        checks.append(check(
+            "Sender verification",
+            LIMITED,
+            "The email didn't include the receiving server's verification "
+            "results, so the sender couldn't be confirmed. Pasting the "
+            "email's original usually fixes this.",
+        ))
+
+    checks.append(
+        check(
+            "Your trusted domains",
+            DONE,
+            "Compared the sender and links with your trusted domains.",
+        )
+        if trusted
+        else check(
+            "Your trusted domains",
+            NOT_NEEDED,
+            "Your organization hasn't listed trusted domains yet.",
+        )
+    )
+
+    checks.append(check(
+        "Wording",
+        DONE,
+        "Checked what the message asks for against common scams.",
+    ))
+
+    link_count = details.get("link_count", 0)
+    if not link_count:
+        checks.append(check("Links", NOT_NEEDED, "The email has no links."))
+    elif link_count > MAX_LINKS_ANALYZED:
+        checks.append(check(
+            "Links",
+            LIMITED,
+            f"Checked the first {MAX_LINKS_ANALYZED} of {link_count} links "
+            "without visiting them.",
+        ))
+    else:
+        checks.append(check(
+            "Links",
+            DONE,
+            f"Checked {link_count} link{'' if link_count == 1 else 's'} "
+            f"without visiting {'it' if link_count == 1 else 'them'}.",
+        ))
+
+    count = len(attachments)
+    if not count:
+        checks.append(check("Attachments", NOT_NEEDED, "The email has no attachments or images."))
+    elif count > MAX_ATTACHMENTS_ANALYZED:
+        checks.append(check(
+            "Attachments",
+            LIMITED,
+            f"Scanned the first {MAX_ATTACHMENTS_ANALYZED} of {count}.",
+        ))
+    else:
+        checks.append(check(
+            "Attachments",
+            DONE,
+            f"Scanned {count} attachment{'' if count == 1 else 's'} or "
+            "image" + ("" if count == 1 else "s") + ", including any QR codes.",
+        ))
+
+    if encrypted:
+        checks.append(check(
+            "Encrypted content",
+            LIMITED,
+            "Part of the email is encrypted and couldn't be inspected.",
+        ))
+
+    hosts = {item.get("host") for item in details.get("links", []) if item.get("host")}
+    checks.append(budget_reputation_check(
+        len(hosts) + min(count, MAX_ATTACHMENTS_ANALYZED),
+        REPUTATION_LOOKUP_BUDGET,
+    ))
+
+    return checks
+
+
 def analyze_email(
     filename: str,
     content: bytes,
@@ -1090,6 +1196,8 @@ def analyze_email(
         REPUTATION_LOOKUP_BUDGET - lookups_used,
         trusted,
     )
+
+    details["checks"] = _email_checks(details, attachments, encrypted, trusted)
 
     if not assessment.reasons:
         assessment.note(

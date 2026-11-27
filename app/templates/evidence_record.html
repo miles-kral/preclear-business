@@ -15,12 +15,10 @@ Evidence Record
 {% set is_qr = analysis.analysis_type == "qr" %}
 {% set is_text = analysis.analysis_type == "text" %}
 
-{% if is_link or is_email or is_qr or is_text %}
-    <link
-        rel="stylesheet"
-        href="/static/css/link-analysis.css"
-    >
-{% endif %}
+<link
+    rel="stylesheet"
+    href="/static/css/link-analysis.css"
+>
 
 <section class="business-record-header">
 
@@ -494,6 +492,8 @@ Evidence Record
 
     </section>
 
+
+    {% include "_checks.html" %}
 
     {% if is_email %}
         {% include "_email_details.html" %}

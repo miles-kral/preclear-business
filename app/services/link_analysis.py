@@ -26,6 +26,12 @@ from app.services.analysis_service import (
     HIGH_RISK_EXTENSIONS,
     MACRO_EXTENSIONS,
 )
+from app.services.coverage import (
+    DONE,
+    NOT_NEEDED,
+    check,
+    reputation_check,
+)
 from app.services.virustotal_service import lookup_host
 
 
@@ -88,8 +94,15 @@ SHARED_HOSTING_SUFFIXES = (
 
 SHARED_HOSTING_HOSTS = {
     "storage.googleapis.com", "sites.google.com", "forms.gle",
-    "docs.google.com", "forms.office.com", "ipfs.io", "dweb.link",
+    "forms.office.com", "ipfs.io", "dweb.link",
     "s3.amazonaws.com", "notion.site", "canva.site",
+}
+
+# Hosts where only some paths let anyone collect information: Google Docs
+# documents are ordinary, but Google Forms (docs.google.com/forms) are
+# often used to collect passwords.
+SHARED_HOSTING_PATHS = {
+    "docs.google.com": ("/forms",),
 }
 
 # Domain endings that look like file names.
@@ -157,6 +170,44 @@ BRAND_DOMAINS: dict[str, set[str]] = {
     "venmo": {"venmo.com"},
     "zelle": {"zellepay.com", "zelle.com"},
 }
+
+# Brand names that are also everyday words or common business names
+# (Apple Valley Dental, Chase Ridge Apartments, a Zoom dance studio).
+# These count as a brand mention only alongside account words.
+EVERYDAY_BRAND_WORDS = {
+    "apple", "chase", "outlook", "amazon", "zoom", "ups", "adobe",
+}
+
+# Words that turn an everyday brand word into a likely impersonation:
+# apple-id-verify, chase-secure-login, outlook-account-update.
+ACCOUNT_WORDS = {
+    "login", "signin", "logon", "verify", "verification", "account",
+    "accounts", "secure", "security", "update", "password", "wallet",
+    "billing", "invoice", "authenticate", "auth", "unlock", "suspended",
+    "confirm", "support", "helpdesk", "recovery", "id", "pay", "payment",
+    "refund", "bank", "banking", "service", "services", "help", "team",
+    "care", "online", "alert", "alerts", "mail", "webmail", "portal",
+    "delivery", "shipping", "order", "orders", "package", "parcel",
+    "track", "tracking", "prime", "gift", "giftcard", "rewards",
+    "reward", "claim", "prize", "customer", "meeting", "invite",
+}
+
+
+def brand_mentioned(keyword: str, tokens) -> bool:
+    """
+    True when a brand keyword among the tokens of a name counts as a brand
+    mention. Everyday words need an account word next to them.
+    """
+    tokens = set(tokens)
+
+    if keyword not in tokens:
+        return False
+
+    if keyword in EVERYDAY_BRAND_WORDS:
+        return bool(tokens & ACCOUNT_WORDS)
+
+    return True
+
 
 # Names people use for a brand's products, mapped to the brand.
 BRAND_KEYWORDS = {
@@ -408,7 +459,7 @@ def _check_brand(
 
     # A brand named in the host, e.g. paypal.account-verify.com.
     for keyword, brand in BRAND_KEYWORDS.items():
-        if keyword in tokens and not is_official(brand):
+        if brand_mentioned(keyword, tokens) and not is_official(brand):
             name = BRAND_DISPLAY_NAMES[brand]
             risk = "HIGH" if on_shared_hosting else "MEDIUM"
             assessment.flag(
@@ -450,6 +501,15 @@ def _check_brand(
             # Spelled with swapped characters (paypa1-secure) is a
             # deliberate imitation; spelled plainly is only a mention.
             disguised = brand not in domain_name.lower()
+
+            # An everyday word spelled plainly (amazon-rainforest-tours)
+            # needs an account word to count.
+            if (
+                not disguised
+                and brand in EVERYDAY_BRAND_WORDS
+                and not set(tokens) & ACCOUNT_WORDS
+            ):
+                continue
             assessment.flag(
                 "HIGH" if disguised else "MEDIUM",
                 f"The domain {registered_domain} contains "
@@ -508,6 +568,7 @@ def _check_host(
     host: str,
     details: dict,
     trusted=None,
+    path: str = "",
 ) -> None:
     # IP addresses instead of names.
     try:
@@ -592,6 +653,7 @@ def _check_host(
     on_shared_hosting = (
         host in SHARED_HOSTING_HOSTS
         or host.endswith(SHARED_HOSTING_SUFFIXES)
+        or (path or "").lower().startswith(SHARED_HOSTING_PATHS.get(host, ("\0",)))
     )
 
     # URL shorteners hide the destination, and PreClear won't follow them.
@@ -872,7 +934,7 @@ def _assess(
         assessment.absorb(inner_assessment, "")
         return assessment
 
-    _check_host(assessment, host, details, trusted)
+    _check_host(assessment, host, details, trusted, parts.path)
     _check_path(assessment, parts.path)
 
     encoded_count = len(re.findall(r"%[0-9a-fA-F]{2}", parts.path))
@@ -1039,7 +1101,42 @@ def analyze_link(
 
     link = details.get("link", link)
 
+    checks = [
+        check(
+            "Address",
+            DONE,
+            "Checked how the address is built, including hidden "
+            "destinations and tricks.",
+        ),
+        check(
+            "Brands and lookalikes",
+            DONE,
+            "Compared the domain with commonly imitated brands.",
+        ),
+        (
+            check(
+                "Your trusted domains",
+                DONE,
+                "Compared the domain with your organization's trusted "
+                "domains.",
+            )
+            if trusted
+            else check(
+                "Your trusted domains",
+                NOT_NEEDED,
+                "Your organization hasn't listed trusted domains yet.",
+            )
+        ),
+        check(
+            "Destination page",
+            NOT_NEEDED,
+            "Never visited, by design.",
+        ),
+        reputation_check(vt_result, "domain"),
+    ]
+
     return {
+        "checks": checks,
         "filename": _display_label(link, details),
         "extension": None,
         "mime_type": None,

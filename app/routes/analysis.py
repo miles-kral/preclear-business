@@ -475,6 +475,17 @@ def _record_analysis(
         {},
     )
 
+    # Store "What was checked" with the evidence, for every type.
+    try:
+        details = json.loads(result.get("details_json") or "{}")
+    except ValueError:
+        details = {}
+
+    if result.get("checks") and "checks" not in details:
+        details["checks"] = result["checks"]
+
+    details_json = json.dumps(details) if details else None
+
     analysis = Analysis(
         organization_id=organization.id,
         user_id=user.id,
@@ -487,7 +498,7 @@ def _record_analysis(
         file_size=result["file_size"],
         sha256=result["sha256"],
         target=result.get("target"),
-        details_json=result.get("details_json"),
+        details_json=details_json,
         virustotal_found=(
             vt_result.get("found")
             if vt_result.get("available")
