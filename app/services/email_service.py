@@ -228,3 +228,61 @@ def send_password_reset_email(
     resend.Emails.send(
         params
     )
+
+def send_feedback_email(
+    *,
+    organization_name: str,
+    user_name: str,
+    user_email: str,
+    category_label: str,
+    rating: int | None,
+    message: str,
+    page: str | None,
+    may_contact: bool,
+) -> None:
+    """Lets the PreClear team know new feedback arrived. Best effort: the
+    feedback is already saved, so a failure here loses nothing."""
+    if not resend.api_key:
+        raise RuntimeError(
+            "RESEND_API_KEY is not configured."
+        )
+
+    support_email = os.getenv(
+        "SUPPORT_CONTACT_EMAIL",
+        "",
+    )
+
+    if not support_email:
+        raise RuntimeError(
+            "SUPPORT_CONTACT_EMAIL is not configured."
+        )
+
+    params: resend.Emails.SendParams = {
+        "from": (
+            f"PreClear Business "
+            f"<{CONTACT_FROM_EMAIL}>"
+        ),
+        "to": [support_email],
+        "subject": (
+            f"PreClear Business Feedback - {category_label}"
+        ),
+        "text": (
+            "New PreClear Business feedback\n\n"
+            f"Organization: {organization_name}\n"
+            f"From: {user_name} ({user_email})\n"
+            f"Type: {category_label}\n"
+            f"Rating: {f'{rating} of 5' if rating else 'Not rated'}\n"
+            f"Page: {page or 'Not recorded'}\n"
+            f"May we contact them: {'Yes' if may_contact else 'No'}\n\n"
+            "Feedback:\n"
+            f"{message}\n\n"
+            "Review all feedback at /admin/feedback\n"
+        ),
+    }
+
+    if may_contact:
+        params["reply_to"] = user_email
+
+    resend.Emails.send(
+        params
+    )

@@ -19,6 +19,7 @@ from app.routes import (
     account,
     admin_evaluations,
     trusted_domains,
+    feedback,
 )
 
 from app import config
@@ -164,4 +165,8 @@ app.include_router(
 
 app.include_router(
     trusted_domains.router,
+)
+
+app.include_router(
+    feedback.router,
 )

@@ -1,0 +1,310 @@
+/* Feedback page and admin review. Builds on the Support page styles. */
+
+.feedback-choices,
+.feedback-rating {
+    margin: 0;
+    padding: 0;
+
+    border: 0;
+}
+
+.feedback-choices legend,
+.feedback-rating legend {
+    margin-bottom: 8px;
+
+    color: #101828;
+
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.feedback-rating legend span {
+    margin-left: 6px;
+
+    color: #667085;
+
+    font-weight: 500;
+}
+
+.feedback-choices {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 8px;
+}
+
+.feedback-choices legend {
+    grid-column: 1 / -1;
+}
+
+.feedback-choices input,
+.feedback-rating input {
+    position: absolute;
+
+    opacity: 0;
+
+    pointer-events: none;
+}
+
+.feedback-choices label,
+.feedback-rating label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 44px;
+
+    padding: 8px 12px;
+
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+
+    background: #ffffff;
+    color: #344054;
+
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+
+    cursor: pointer;
+}
+
+.feedback-choices input:checked + label,
+.feedback-rating input:checked + label {
+    border-color: #0a3278;
+
+    background: #eef4ff;
+    color: #0a3278;
+
+    box-shadow: 0 0 0 2px rgba(10, 50, 120, 0.12);
+}
+
+.feedback-choices input:focus-visible + label,
+.feedback-rating input:focus-visible + label {
+    outline: 2px solid #0a3278;
+    outline-offset: 2px;
+}
+
+.feedback-rating__options {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 52px));
+
+    gap: 8px;
+}
+
+.feedback-rating small {
+    display: block;
+
+    margin-top: 6px;
+
+    color: #667085;
+
+    font-size: 0.75rem;
+}
+
+.feedback-contact {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 10px;
+
+    color: #344054;
+
+    font-size: 0.85rem;
+}
+
+.feedback-contact input {
+    margin-top: 3px;
+}
+
+.feedback-note {
+    margin: 0;
+
+    color: #667085;
+
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.feedback-tips {
+    display: grid;
+
+    gap: 14px;
+
+    margin: 0;
+    padding-left: 18px;
+
+    color: #475467;
+
+    font-size: 0.88rem;
+    line-height: 1.55;
+}
+
+.feedback-tips strong {
+    color: #101828;
+}
+
+.feedback-error {
+    margin-bottom: 20px;
+}
+
+@media (max-width: 560px) {
+    .feedback-choices {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* Admin review */
+
+.feedback-filters {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    margin-bottom: 20px;
+}
+
+.feedback-filters select,
+.feedback-item__status select {
+    min-height: 40px;
+
+    padding: 0 10px;
+
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    font: inherit;
+    font-size: 0.85rem;
+}
+
+.feedback-list {
+    display: grid;
+
+    gap: 16px;
+}
+
+.feedback-item {
+    display: grid;
+
+    gap: 12px;
+
+    padding: 20px;
+
+    border-left: 4px solid #98a2b3;
+}
+
+.feedback-item--bug { border-left-color: #d92d20; }
+.feedback-item--improvement { border-left-color: #1570ef; }
+.feedback-item--experience { border-left-color: #12b76a; }
+
+.feedback-item__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+
+    gap: 10px;
+
+    color: #667085;
+
+    font-size: 0.8rem;
+}
+
+.feedback-item__type,
+.feedback-item__rating {
+    padding: 3px 10px;
+
+    border-radius: 999px;
+
+    background: #f2f4f7;
+    color: #344054;
+
+    font-weight: 700;
+}
+
+.feedback-item__message {
+    margin: 0;
+
+    color: #101828;
+
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.feedback-item__details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 8px 20px;
+
+    margin: 0;
+
+    font-size: 0.8rem;
+}
+
+.feedback-item__details dt {
+    color: #667085;
+    font-weight: 700;
+}
+
+.feedback-item__details dd {
+    margin: 0;
+
+    color: #344054;
+    overflow-wrap: anywhere;
+}
+
+.feedback-item__browser {
+    font-size: 0.72rem;
+}
+
+.feedback-item__status {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    font-size: 0.8rem;
+}
+
+.feedback-empty {
+    padding: 24px;
+
+    color: #667085;
+}
+
+@media (max-width: 700px) {
+    .feedback-item__details {
+        grid-template-columns: 1fr;
+    }
+}
+
+.business-contact-form textarea[name="message"] {
+    width: 100%;
+
+    padding: 10px 12px;
+
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+
+    background: #ffffff;
+    color: #101828;
+
+    font: inherit;
+    font-size: 0.9rem;
+    line-height: 1.5;
+
+    resize: vertical;
+}
+
+.business-contact-form textarea[name="message"]:focus {
+    outline: none;
+
+    border-color: #0a3278;
+
+    box-shadow: 0 0 0 3px rgba(10, 50, 120, 0.1);
+}

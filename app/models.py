@@ -1004,3 +1004,77 @@ class ReputationCache(Base):
         nullable=False,
         index=True,
     )
+
+
+class Feedback(Base):
+    """
+    Feedback from signed-in users: their experience, improvements they'd
+    like, or bugs they found. Reviewed by PreClear's platform admins.
+    """
+
+    __tablename__ = "feedback"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+    )
+
+    organization_id: Mapped[int | None] = mapped_column(
+        ForeignKey("organizations.id"),
+        nullable=True,
+        index=True,
+    )
+
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+
+    # "experience", "improvement", "bug" or "other".
+    category: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+    )
+
+    # 1 to 5, or empty if they didn't rate.
+    rating: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    message: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+
+    # The page they were on when they opened the form, for bug reports.
+    page: Mapped[str | None] = mapped_column(
+        String(300),
+        nullable=True,
+    )
+
+    browser: Mapped[str | None] = mapped_column(
+        String(300),
+        nullable=True,
+    )
+
+    may_contact: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    # "new", "reviewed", "planned" or "resolved".
+    status: Mapped[str] = mapped_column(
+        String(20),
+        default="new",
+        nullable=False,
+        index=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+        index=True,
+    )

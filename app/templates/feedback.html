@@ -1,0 +1,283 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Feedback | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Feedback
+{% endblock %}
+
+{% block content %}
+
+<link
+    rel="stylesheet"
+    href="/static/css/feedback.css"
+>
+
+<section class="business-contact-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Help us improve
+        </p>
+
+        <h1 class="page-title">
+            Share Your Feedback
+        </h1>
+
+        <p class="page-description">
+            Tell us how PreClear is working for you, what you'd like
+            to see next, or anything that isn't working right. Every
+            message is read by the PreClear team.
+        </p>
+
+        {% if is_admin %}
+            <a
+                class="button button--outline"
+                href="/admin/feedback"
+            >
+                Review All Feedback
+            </a>
+        {% endif %}
+
+    </div>
+
+</section>
+
+
+{% if sent %}
+
+    <div class="business-contact-success">
+
+        <strong>
+            Thank you! Your feedback was sent to the PreClear team.
+        </strong>
+
+        <p>
+            If you said we could follow up, we'll reply to the email
+            address on your account.
+        </p>
+
+    </div>
+
+{% endif %}
+
+
+{% if error %}
+
+    <div class="business-contact-error feedback-error" role="alert">
+
+        <strong>
+            Your feedback wasn't sent
+        </strong>
+
+        <p>
+            {{ error }}
+        </p>
+
+    </div>
+
+{% endif %}
+
+
+<section class="business-contact-grid">
+
+    <div>
+
+        <article class="card business-contact-panel">
+
+            <div class="business-contact-panel__header">
+                <div>
+                    <p class="eyebrow">
+                        Feedback
+                    </p>
+                    <h2>
+                        What would you like to tell us?
+                    </h2>
+                </div>
+            </div>
+
+
+            <form
+                class="business-contact-form"
+                method="post"
+                action="/feedback"
+            >
+
+                <fieldset class="feedback-choices">
+
+                    <legend>
+                        This is about
+                    </legend>
+
+                    {% for value, label in categories.items() %}
+
+                        <input
+                            type="radio"
+                            id="feedback-type-{{ value }}"
+                            name="category"
+                            value="{{ value }}"
+                            {% if value == chosen_category %}checked{% endif %}
+                        >
+                        <label for="feedback-type-{{ value }}">
+                            {{ label }}
+                        </label>
+
+                    {% endfor %}
+
+                </fieldset>
+
+
+                <fieldset class="feedback-rating">
+
+                    <legend>
+                        How would you rate PreClear overall?
+                        <span>Optional</span>
+                    </legend>
+
+                    <div class="feedback-rating__options">
+                        {% for score in range(1, 6) %}
+                            <input
+                                type="radio"
+                                id="feedback-rating-{{ score }}"
+                                name="rating"
+                                value="{{ score }}"
+                            >
+                            <label for="feedback-rating-{{ score }}">
+                                {{ score }}
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <small>
+                        1 is poor, 5 is excellent.
+                    </small>
+
+                </fieldset>
+
+
+                <label class="business-form-field">
+
+                    <span>
+                        Your feedback
+                    </span>
+
+                    <textarea
+                        name="message"
+                        rows="7"
+                        minlength="10"
+                        maxlength="{{ max_message }}"
+                        placeholder="For a bug: what you did, what you expected, and what happened instead. For an idea: the problem it would solve for you."
+                        required
+                    ></textarea>
+
+                </label>
+
+
+                <label class="feedback-contact">
+                    <input
+                        type="checkbox"
+                        name="may_contact"
+                        value="1"
+                        checked
+                    >
+                    <span>
+                        The PreClear team may email me about this feedback.
+                    </span>
+                </label>
+
+
+                <input
+                    type="hidden"
+                    name="page"
+                    value="{{ from_page or '' }}"
+                >
+
+
+                <div class="business-contact-form__identity">
+                    <span>
+                        Sending as
+                    </span>
+                    <strong>
+                        {{ current_user.name }}
+                        ·
+                        {{ current_organization.name }}
+                    </strong>
+                </div>
+
+
+                <p class="feedback-note">
+                    {% if from_page %}
+                        To help with bug reports, we'll include the page
+                        you came from ({{ from_page }}) and your browser
+                        type.
+                    {% else %}
+                        To help with bug reports, we'll include your
+                        browser type.
+                    {% endif %}
+                    Please don't include passwords, codes or private
+                    customer details.
+                </p>
+
+
+                <div class="business-contact-form__actions">
+                    <button
+                        class="button button--primary"
+                        type="submit"
+                    >
+                        Send Feedback
+                    </button>
+                </div>
+
+            </form>
+
+        </article>
+
+    </div>
+
+
+    <aside>
+
+        <article class="card business-contact-panel">
+
+            <div class="business-contact-panel__header">
+                <div>
+                    <p class="eyebrow">
+                        Tips
+                    </p>
+                    <h2>
+                        What helps us most
+                    </h2>
+                </div>
+            </div>
+
+            <ul class="feedback-tips">
+                <li>
+                    <strong>Found a bug?</strong>
+                    Tell us what you did, what you expected, and what
+                    happened. A result that seems wrong is worth
+                    reporting too; the Trust Decision's record number
+                    (shown as PC-123) helps us find it.
+                </li>
+                <li>
+                    <strong>Have an idea?</strong>
+                    Describe the problem it would solve for your team,
+                    not only the feature.
+                </li>
+                <li>
+                    <strong>Need help right now?</strong>
+                    For account, billing or urgent issues, use
+                    <a href="/support">Support</a>, which reaches our
+                    team directly.
+                </li>
+            </ul>
+
+        </article>
+
+    </aside>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends "app_base.html" %}
+
+{% block title %}
+Feedback Review | PreClear Business
+{% endblock %}
+
+{% block topbar_title %}
+Feedback Review
+{% endblock %}
+
+{% block content %}
+
+<link
+    rel="stylesheet"
+    href="/static/css/feedback.css"
+>
+
+<section class="business-contact-header">
+
+    <div>
+
+        <p class="eyebrow">
+            Platform admin
+        </p>
+
+        <h1 class="page-title">
+            Feedback Review
+        </h1>
+
+        <p class="page-description">
+            {{ entries|length }} shown{% if average_rating %} ·
+            average rating {{ average_rating }} of 5{% endif %}.
+            Newest first.
+        </p>
+
+    </div>
+
+</section>
+
+
+<form
+    class="feedback-filters"
+    method="get"
+    action="/admin/feedback"
+>
+
+    <select name="type" aria-label="Filter by type">
+        <option value="">All types</option>
+        {% for value, label in categories.items() %}
+            <option value="{{ value }}" {% if value == chosen_type %}selected{% endif %}>
+                {{ label }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <select name="status" aria-label="Filter by status">
+        <option value="">All statuses</option>
+        {% for value, label in statuses.items() %}
+            <option value="{{ value }}" {% if value == chosen_status %}selected{% endif %}>
+                {{ label }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <button class="button button--outline" type="submit">
+        Filter
+    </button>
+
+</form>
+
+
+{% if entries %}
+
+    <div class="feedback-list">
+
+        {% for entry in entries %}
+
+            {% set user = users.get(entry.user_id) %}
+            {% set org = organizations.get(entry.organization_id) %}
+
+            <article class="card feedback-item feedback-item--{{ entry.category }}">
+
+                <div class="feedback-item__meta">
+
+                    <span class="feedback-item__type">
+                        {{ categories.get(entry.category, entry.category) }}
+                    </span>
+
+                    {% if entry.rating %}
+                        <span class="feedback-item__rating">
+                            {{ entry.rating }} of 5
+                        </span>
+                    {% endif %}
+
+                    <span>
+                        {{ entry.created_at.strftime("%b %d, %Y %I:%M %p") }} UTC
+                    </span>
+
+                </div>
+
+                <p class="feedback-item__message">{{ entry.message }}</p>
+
+                <dl class="feedback-item__details">
+                    <div>
+                        <dt>From</dt>
+                        <dd>
+                            {{ user.name if user else "Deleted user" }}
+                            {% if user and entry.may_contact %}
+                                (<a href="mailto:{{ user.email }}">{{ user.email }}</a>)
+                            {% elif user %}
+                                (doesn't want to be contacted)
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>Organization</dt>
+                        <dd>{{ org.name if org else "None" }}</dd>
+                    </div>
+                    <div>
+                        <dt>Page</dt>
+                        <dd>{{ entry.page or "Not recorded" }}</dd>
+                    </div>
+                    <div>
+                        <dt>Browser</dt>
+                        <dd class="feedback-item__browser">{{ entry.browser or "Not recorded" }}</dd>
+                    </div>
+                </dl>
+
+                <form
+                    class="feedback-item__status"
+                    method="post"
+                    action="/admin/feedback/{{ entry.id }}/status"
+                >
+                    <label for="feedback-status-{{ entry.id }}">
+                        Status
+                    </label>
+                    <select id="feedback-status-{{ entry.id }}" name="status">
+                        {% for value, label in statuses.items() %}
+                            <option value="{{ value }}" {% if value == entry.status %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <button class="button button--outline" type="submit">
+                        Update
+                    </button>
+                </form>
+
+            </article>
+
+        {% endfor %}
+
+    </div>
+
+{% else %}
+
+    <div class="card feedback-empty">
+        <p>
+            No feedback matches these filters yet.
+        </p>
+    </div>
+
+{% endif %}
+
+{% endblock %}
