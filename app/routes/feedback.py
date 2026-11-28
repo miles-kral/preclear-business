@@ -57,6 +57,10 @@ MAX_MESSAGE = 5000
 # Enough for genuine use, low enough to stop a runaway script.
 MAX_PER_DAY = 10
 
+# Across everyone in one organization, so a single compromised account,
+# or several, can't flood the support inbox.
+MAX_PER_ORGANIZATION_PER_DAY = 30
+
 
 def _safe_page(value: str | None) -> str | None:
     """Keeps only a path within PreClear, such as /ledger or /analysis/12."""
@@ -170,6 +174,27 @@ def submit_feedback(
         return fail(
             "You've sent a lot of feedback today. Thank you! Please try "
             "again tomorrow, or use the Support page for anything urgent."
+        )
+
+    organization_recent = (
+        db.query(Feedback)
+        .filter(
+            Feedback.organization_id == current_organization.id,
+            Feedback.created_at >= since,
+        )
+        .count()
+    )
+
+    if organization_recent >= MAX_PER_ORGANIZATION_PER_DAY:
+        logger.warning(
+            "Feedback limit reached for organization %s (%s today).",
+            current_organization.id,
+            organization_recent,
+        )
+        return fail(
+            "Your organization has sent a lot of feedback today. Thank "
+            "you! Please try again tomorrow, or use the Support page for "
+            "anything urgent."
         )
 
     entry = Feedback(

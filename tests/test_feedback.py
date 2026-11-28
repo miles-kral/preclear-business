@@ -54,6 +54,24 @@ class FeedbackForm(unittest.TestCase):
             self.send()
         self.assertEqual(len(self.stored()), feedback_routes.MAX_PER_DAY)
 
+    def test_organization_wide_daily_limit(self):
+        # Spread across several people in the same organization, each
+        # under their own daily limit.
+        db = support.account()["db"]
+        org_id = support.account()["org_id"]
+        for number in range(feedback_routes.MAX_PER_ORGANIZATION_PER_DAY):
+            db.add(models.Feedback(
+                organization_id=org_id,
+                user_id=None,
+                category="other",
+                message=f"Earlier feedback from a colleague, number {number}.",
+            ))
+        db.commit()
+
+        self.send()
+        self.assertEqual(len(self.stored()), feedback_routes.MAX_PER_ORGANIZATION_PER_DAY)
+        self.assertIn("Your organization has sent a lot of feedback today", self.client.get("/feedback").text)
+
     def test_the_page_opens_from_the_sidebar_link(self):
         page = self.client.get("/feedback?from=/ledger").text
         self.assertIn("Share Your Feedback", page)
@@ -87,3 +105,36 @@ class FeedbackReview(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NoRealEmailFromTests(unittest.TestCase):
+    """Guards against tests reaching the real email service, which once
+    sent test feedback to the live support inbox."""
+
+    def test_email_service_is_disconnected(self):
+        import os
+
+        import resend
+
+        from app.services import email_service
+
+        self.assertEqual(os.environ.get("RESEND_API_KEY"), "")
+        self.assertEqual(email_service.resend.api_key, "")
+        self.assertEqual(os.environ.get("SUPPORT_CONTACT_EMAIL"), "")
+        self.assertTrue(resend.api_url.startswith("http://127.0.0.1"))
+
+    def test_feedback_notification_only_reaches_the_stand_in(self):
+        import os
+
+        from app.services import email_service
+
+        support.SENT_EMAILS.clear()
+        with patch.object(email_service.resend, "api_key", "re_test_dummy"), \
+             patch.dict(os.environ, {"SUPPORT_CONTACT_EMAIL": "support@example.invalid"}):
+            support.signed_in_client().post(
+                "/feedback",
+                data={"category": "improvement", "message": "Notification test from the test suite."},
+                headers=support.ORIGIN,
+            )
+        self.assertEqual(len(support.SENT_EMAILS), 1)
+        self.assertEqual(support.SENT_EMAILS[0]["to"], ["support@example.invalid"])

@@ -3,9 +3,10 @@ Shared setup for PreClear's tests. Import this before anything from app.
 
 Every test run uses a throwaway SQLite database in a temporary folder,
 built from the Alembic migrations, and never touches the real database,
-Stripe or VirusTotal: their keys are blanked or replaced with dummies
-before the app loads, and Stripe is pointed at an address that can't be
-reached, so an accidental call fails instead of going out.
+Stripe, VirusTotal or the email service: their keys and addresses are
+blanked or replaced with dummies before the app loads, Stripe and Resend
+are pointed at an address that can't be reached, and sending email is
+replaced with a stand-in that only records what would have been sent.
 """
 import atexit
 import io
@@ -38,11 +39,34 @@ os.environ.update({
     "STRIPE_ENTERPRISE_ANNUAL_PRICE_ID": "price_ent_annual",
     "TURNSTILE_SITE_KEY": "",
     "TURNSTILE_SECRET_KEY": "",
+    # Email: no key and no recipients, so nothing can be delivered.
+    "RESEND_API_KEY": "",
+    "SUPPORT_CONTACT_EMAIL": "",
+    "SALES_CONTACT_EMAIL": "",
+    "CONTACT_FROM_EMAIL": "tests@example.invalid",
 })
 
 import stripe  # noqa: E402
 
 stripe.api_base = "http://127.0.0.1:9"
+
+# Email is never sent from tests. Even if a key slipped through, Resend is
+# pointed at an unreachable address, and sending only records the message
+# here so tests can check what would have gone out.
+import resend  # noqa: E402
+
+resend.api_key = ""
+resend.api_url = "http://127.0.0.1:9"
+
+SENT_EMAILS: list = []
+
+
+def _record_email(params, *args, **kwargs):
+    SENT_EMAILS.append(params)
+    return {"id": "test-email"}
+
+
+resend.Emails.send = staticmethod(_record_email)
 
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
